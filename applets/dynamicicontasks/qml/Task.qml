@@ -782,7 +782,7 @@ PlasmaCore.ToolTipArea {
             && ((!task.model.IsLauncher) || task.colorHover)
         opacity: (task.model.IsActive || task.colorHover)
             ? 1
-            : (task.model.IsMinimized ? 0.65 : 0.9)
+            : Plasmoid.configuration.inactiveMarkerOpacity / 100
 
         width: verticalIndicator
             ? indicatorThickness

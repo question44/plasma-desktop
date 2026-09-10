@@ -229,7 +229,7 @@ KCMUtils.SimpleKCM {
             id: inactiveMarkerOpacity
             visible: runningIndicatorStyle.currentIndex === 1
                 || runningIndicatorStyle.currentIndex === 2
-            Kirigami.FormData.label: i18nc("@label:spinbox", "Inactive marker opacity:")
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Inactive indicator opacity:")
             from: 5
             to: 100
             textFromValue: value => i18nc("@item:valuesuffix percentage", "%1%", value)

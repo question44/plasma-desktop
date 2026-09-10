@@ -227,7 +227,7 @@
       <max>24</max>
     </entry>
     <entry name="inactiveMarkerOpacity" type="Int">
-      <label>Opacity percentage of inactive-window markers in segmented indicator modes.</label>
+      <label>Opacity percentage of inactive task indicators and inactive-window markers in segmented modes.</label>
       <default>40</default>
       <min>5</min>
       <max>100</max>

@@ -9,7 +9,8 @@ the stock task model and interactions, while adding:
   or a long active-window segment with the other windows represented by squares;
 - configurable minimum length for the small inactive-window markers, capped
   automatically when required to keep every marker inside the task button;
-- configurable opacity for inactive-window markers in both segmented modes;
+- configurable shared opacity for inactive task edges and inactive-window
+  markers in both segmented modes;
 - the stock group-expander badge is shown only in Plasma-standard mode;
 - linked or independently configurable background corner radii;
 - fixed-color fallback and configurable appearance.
