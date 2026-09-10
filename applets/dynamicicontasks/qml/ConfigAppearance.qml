@@ -44,6 +44,7 @@ KCMUtils.SimpleKCM {
     property alias cfg_runningIndicatorThickness: runningIndicatorThickness.value
     property alias cfg_inactiveMarkerMinimumLength: inactiveMarkerMinimumLength.value
     property alias cfg_inactiveMarkerOpacity: inactiveMarkerOpacity.value
+    property alias cfg_animateRunningIndicators: animateRunningIndicators.checked
 
     Component.onCompleted: {
         /* Don't rely on bindings for checking the radiobuttons
@@ -234,6 +235,13 @@ KCMUtils.SimpleKCM {
             to: 100
             textFromValue: value => i18nc("@item:valuesuffix percentage", "%1%", value)
             valueFromText: text => parseInt(text)
+        }
+
+        QQC2.CheckBox {
+            id: animateRunningIndicators
+            visible: runningIndicatorStyle.currentIndex === 1
+                || runningIndicatorStyle.currentIndex === 2
+            text: i18nc("@option:check", "Animate indicator changes")
         }
 
         Item {

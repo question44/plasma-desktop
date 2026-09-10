@@ -232,6 +232,10 @@
       <min>5</min>
       <max>100</max>
     </entry>
+    <entry name="animateRunningIndicators" type="Bool">
+      <label>Whether changes to segmented running-task indicators are animated.</label>
+      <default>true</default>
+    </entry>
   </group>
 
 </kcfg>

@@ -806,6 +806,7 @@ PlasmaCore.ToolTipArea {
 
             delegate: Rectangle {
                 required property int index
+                property bool initialized: false
 
                 color: task.taskAccentColor
                 opacity: {
@@ -833,6 +834,39 @@ PlasmaCore.ToolTipArea {
                 y: runningIndicator.verticalIndicator
                     ? runningIndicator.offsetFor(index)
                     : 0
+                scale: !Plasmoid.configuration.animateRunningIndicators || initialized ? 1 : 0
+                transformOrigin: Item.Center
+
+                Component.onCompleted: initialized = true
+
+                Behavior on x {
+                    enabled: Plasmoid.configuration.animateRunningIndicators
+                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+                }
+                Behavior on y {
+                    enabled: Plasmoid.configuration.animateRunningIndicators
+                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+                }
+                Behavior on width {
+                    enabled: Plasmoid.configuration.animateRunningIndicators
+                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+                }
+                Behavior on height {
+                    enabled: Plasmoid.configuration.animateRunningIndicators
+                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+                }
+                Behavior on radius {
+                    enabled: Plasmoid.configuration.animateRunningIndicators
+                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+                }
+                Behavior on opacity {
+                    enabled: Plasmoid.configuration.animateRunningIndicators
+                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutCubic }
+                }
+                Behavior on scale {
+                    enabled: Plasmoid.configuration.animateRunningIndicators
+                    NumberAnimation { duration: Kirigami.Units.shortDuration; easing.type: Easing.OutBack }
+                }
             }
         }
     }
