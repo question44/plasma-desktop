@@ -1,0 +1,23 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "KDE Plasma contributors"
+            },
+            {
+                "Name": "Janzon task-visibility customization"
+            }
+        ],
+        "Category": "Windows and Tasks",
+        "Description": "Icons-only task manager with visible running indicators and icon-derived active backgrounds",
+        "EnabledByDefault": true,
+        "Icon": "preferences-system-windows",
+        "License": "GPL-2.0-or-later",
+        "Name": "Dynamic Icons-Only Task Manager",
+        "Version": "1.0.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": [
+        "org.kde.plasma.multitasking"
+    ]
+}
