@@ -1104,6 +1104,33 @@ PlasmaCore.ToolTipArea {
                 visible: albumArtSecond.opacity > 0
                 opacity: albumArtSecond.opacity
             }
+
+            Rectangle {
+                id: albumArtPausedShade
+
+                anchors.fill: parent
+                z: 1
+                radius: task.albumArtCornerRadius
+                color: Qt.rgba(0, 0, 0, 0.5)
+                visible: task.mediaAlbumArtEnabled
+                    && (albumArtFirst.opacity > 0 || albumArtSecond.opacity > 0)
+                opacity: task.mediaProgressPaused ? 1 : 0
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Kirigami.Units.shortDuration
+                        easing.type: Easing.InOutQuad
+                    }
+                }
+
+                Kirigami.Icon {
+                    anchors.centerIn: parent
+                    width: Math.min(parent.width, parent.height) * 0.42
+                    height: width
+                    source: "media-playback-pause"
+                    color: Kirigami.Theme.textColor
+                }
+            }
         }
 
         Timer {
@@ -1132,6 +1159,7 @@ PlasmaCore.ToolTipArea {
         Kirigami.ShadowedRectangle {
             id: albumArtAppBadge
 
+            z: 2
             visible: (albumArtFirst.opacity > 0 || albumArtSecond.opacity > 0)
                 && Plasmoid.configuration.showAppIconOnAlbumArt
             width: Math.max(10, Math.round(Math.min(iconBox.width, iconBox.height) * 0.42))
