@@ -284,6 +284,18 @@
       <label>Visibility mode for media controls in wide media-player tasks.</label>
       <default>1</default>
     </entry>
+    <entry name="showWideMediaPrevious" type="Bool">
+      <label>Whether wide media-player tasks show a previous-track button.</label>
+      <default>true</default>
+    </entry>
+    <entry name="showWideMediaPlayPause" type="Bool">
+      <label>Whether wide media-player tasks show a play-pause button.</label>
+      <default>true</default>
+    </entry>
+    <entry name="showWideMediaNext" type="Bool">
+      <label>Whether wide media-player tasks show a next-track button.</label>
+      <default>true</default>
+    </entry>
     <entry name="wideMediaControlsBackgroundStyle" type="Int">
       <label>Background treatment for media controls in wide media-player tasks.</label>
       <default>0</default>

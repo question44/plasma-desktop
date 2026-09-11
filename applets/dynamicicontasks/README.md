@@ -31,7 +31,7 @@ the stock task model and interactions, while adding:
   width without absorbing spare panel space and use the maximum only as a
   content-growth ceiling, with optional artist/track metadata in stacked,
   inline, or automatic responsive layouts, plus previous/play-next controls
-  that can always be shown or overlaid only on hover;
+  whose visibility mode and displayed buttons can be configured independently;
 - a dedicated Media settings tab for playback controls, progress, album art,
   exclusions, and task-to-MPRIS ID mappings;
 - optional animations for segment emphasis, position, size, shape, and entry;

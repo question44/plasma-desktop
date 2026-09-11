@@ -28,6 +28,9 @@ KCMUtils.SimpleKCM {
     property bool cfg_scrollMediaMetadata
     property int cfg_mediaMetadataScrollMode
     property alias cfg_wideMediaControlsMode: wideMediaControlsMode.currentIndex
+    property alias cfg_showWideMediaPrevious: showWideMediaPrevious.checked
+    property alias cfg_showWideMediaPlayPause: showWideMediaPlayPause.checked
+    property alias cfg_showWideMediaNext: showWideMediaNext.checked
     property alias cfg_wideMediaControlsBackgroundStyle: wideMediaControlsBackgroundStyle.currentIndex
     property alias cfg_replaceMediaPlayerIconWithAlbumArt: replaceMediaPlayerIconWithAlbumArt.checked
     property alias cfg_showAppIconOnAlbumArt: showAppIconOnAlbumArt.checked
@@ -189,6 +192,29 @@ KCMUtils.SimpleKCM {
                 i18nc("@item:inlistbox", "Always show"),
                 i18nc("@item:inlistbox", "Show on hover")
             ]
+        }
+
+        QQC2.CheckBox {
+            id: showWideMediaPrevious
+            Kirigami.FormData.label: i18nc("@label for media settings", "Wide task buttons:")
+            text: i18nc("@option:check", "Previous track")
+            enabled: expandMediaPlayerTasks.checked
+        }
+
+        QQC2.CheckBox {
+            id: showWideMediaPlayPause
+            leftPadding: mirrored ? 0 : showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing
+            rightPadding: mirrored ? showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing : 0
+            text: i18nc("@option:check", "Play / pause")
+            enabled: expandMediaPlayerTasks.checked
+        }
+
+        QQC2.CheckBox {
+            id: showWideMediaNext
+            leftPadding: mirrored ? 0 : showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing
+            rightPadding: mirrored ? showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing : 0
+            text: i18nc("@option:check", "Next track")
+            enabled: expandMediaPlayerTasks.checked
         }
 
         QQC2.ComboBox {

@@ -130,16 +130,22 @@ PlasmaCore.ToolTipArea {
         : 0
     readonly property bool mediaControlsAvailable: expandedMediaTask
         && (mediaPlayerData?.canControl ?? false)
+        && mediaControlsButtonCount > 0
     readonly property string mediaControlsVisibilityMode: ["always", "hover"][
         Math.max(0, Math.min(1, Plasmoid.configuration.wideMediaControlsMode))]
     readonly property bool mediaControlsAlwaysVisible: mediaControlsVisibilityMode === "always"
     readonly property string mediaControlsBackgroundMode: ["solid", "diffuse"][
         Math.max(0, Math.min(1, Plasmoid.configuration.wideMediaControlsBackgroundStyle))]
     readonly property bool mediaControlsBlendIntoTask: mediaControlsBackgroundMode === "diffuse"
+    readonly property int mediaControlsButtonCount:
+        (Plasmoid.configuration.showWideMediaPrevious ? 1 : 0)
+        + (Plasmoid.configuration.showWideMediaPlayPause ? 1 : 0)
+        + (Plasmoid.configuration.showWideMediaNext ? 1 : 0)
     readonly property real mediaControlsButtonSize: Kirigami.Units.iconSizes.smallMedium
     readonly property real mediaControlsHorizontalPadding: Kirigami.Units.smallSpacing * 1.5
-    readonly property real mediaControlsWidth: (mediaControlsButtonSize * 3)
-        + (Kirigami.Units.smallSpacing * 2) + (mediaControlsHorizontalPadding * 2)
+    readonly property real mediaControlsWidth: mediaControlsButtonSize * mediaControlsButtonCount
+        + (Kirigami.Units.smallSpacing * Math.max(0, mediaControlsButtonCount - 1))
+        + (mediaControlsHorizontalPadding * 2)
     readonly property real mediaControlsReservation: mediaControlsAvailable && mediaControlsAlwaysVisible
         ? mediaControlsWidth + TaskManagerApplet.LayoutMetrics.labelMargin
         : 0
@@ -1600,7 +1606,8 @@ PlasmaCore.ToolTipArea {
             spacing: Kirigami.Units.smallSpacing
 
             PlasmaComponents3.ToolButton {
-                width: task.mediaControlsButtonSize
+                visible: Plasmoid.configuration.showWideMediaPrevious
+                width: visible ? task.mediaControlsButtonSize : 0
                 height: width
                 enabled: task.mediaPlayerData?.canGoPrevious ?? false
                 icon.name: Application.layoutDirection === Qt.RightToLeft
@@ -1610,7 +1617,8 @@ PlasmaCore.ToolTipArea {
             }
 
             PlasmaComponents3.ToolButton {
-                width: task.mediaControlsButtonSize
+                visible: Plasmoid.configuration.showWideMediaPlayPause
+                width: visible ? task.mediaControlsButtonSize : 0
                 height: width
                 enabled: task.mediaProgressPlaying
                     ? (task.mediaPlayerData?.canPause ?? false)
@@ -1630,7 +1638,8 @@ PlasmaCore.ToolTipArea {
             }
 
             PlasmaComponents3.ToolButton {
-                width: task.mediaControlsButtonSize
+                visible: Plasmoid.configuration.showWideMediaNext
+                width: visible ? task.mediaControlsButtonSize : 0
                 height: width
                 enabled: task.mediaPlayerData?.canGoNext ?? false
                 icon.name: Application.layoutDirection === Qt.RightToLeft
