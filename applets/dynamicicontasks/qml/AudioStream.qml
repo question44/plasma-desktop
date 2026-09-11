@@ -24,6 +24,10 @@ Item {
     }
 
     readonly property real indicatorScale: 1.2
+    readonly property bool taskHovered: task.containsMouse || hoverHandler.hovered
+    readonly property bool shouldShow: task.audioStreamIndicatorVisibility === 0
+        || (task.audioStreamIndicatorVisibility === 1 && taskHovered)
+        || (task.audioStreamIndicatorVisibility === 2 && (task.muted || taskHovered))
 
     activeFocusOnTab: true
 
@@ -31,8 +35,8 @@ Item {
     // which allows us to delay showing the icon but hide it instantly still.
     states: [
         State {
-            name: "playing"
-            when: task.playingAudio && !task.muted
+            name: "unmuted"
+            when: !task.muted && shouldShow
             PropertyChanges {
                 audioStreamIconBox.opacity: 1
                 audioStreamIcon.source: "audio-volume-high-symbolic" + (Application.layoutDirection === Qt.RightToLeft ? "-rtl" : "")
@@ -40,7 +44,7 @@ Item {
         },
         State {
             name: "muted"
-            when: task.muted
+            when: task.muted && shouldShow
             PropertyChanges {
                 audioStreamIconBox.opacity: 1
                 audioStreamIcon.source: "audio-volume-muted-symbolic" + (Application.layoutDirection === Qt.RightToLeft ? "-rtl" : "")
@@ -51,11 +55,12 @@ Item {
     transitions: [
         Transition {
              from: ""
-             to: "playing"
+             to: "unmuted"
              SequentialAnimation {
                  // Delay showing the play indicator so we don't flash it for brief sounds.
                  PauseAnimation {
-                     duration: !task.delayAudioStreamIndicator || inPopup ? 0 : 2000
+                    duration: !task.delayAudioStreamIndicator || inPopup
+                        || !task.playingAudio || task.audioStreamIndicatorVisibility !== 0 ? 0 : 2000
                  }
                  NumberAnimation {
                      property: "opacity"

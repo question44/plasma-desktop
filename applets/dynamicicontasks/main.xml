@@ -126,6 +126,10 @@
       <label>Whether to mute applications that are playing audio using audio indicators.</label>
       <default>true</default>
     </entry>
+    <entry name="audioStreamIndicatorVisibility" type="Int">
+      <label>Visibility mode for task audio indicators.</label>
+      <default>2</default>
+    </entry>
     <entry name="tooltipControls" type="Bool">
       <label>Whether to show media and volume controls in the tooltip.</label>
       <default>true</default>
@@ -244,6 +248,10 @@
       <label>Whether a single-window media player's running indicator shows playback progress.</label>
       <default>true</default>
     </entry>
+    <entry name="mediaPlayerColorSource" type="Int">
+      <label>Color source for media-player playback progress and dynamic task backgrounds.</label>
+      <default>1</default>
+    </entry>
     <entry name="expandMediaPlayerTasks" type="Bool">
       <label>Whether playing or paused media-player tasks use a wider layout on horizontal panels.</label>
       <default>false</default>
@@ -255,6 +263,30 @@
     <entry name="mediaPlayerTaskMaxWidth" type="Int">
       <label>Maximum width of an expanded media-player task in pixels.</label>
       <default>360</default>
+    </entry>
+    <entry name="showMediaMetadata" type="Bool">
+      <label>Whether wide media-player tasks show artist and track metadata.</label>
+      <default>true</default>
+    </entry>
+    <entry name="mediaMetadataLayout" type="Int">
+      <label>Layout of artist and track metadata in wide media-player tasks.</label>
+      <default>0</default>
+    </entry>
+    <entry name="scrollMediaMetadata" type="Bool">
+      <label>Whether overflowing wide media-player metadata scrolls back and forth.</label>
+      <default>true</default>
+    </entry>
+    <entry name="mediaMetadataScrollMode" type="Int">
+      <label>Direction mode for overflowing wide media-player metadata.</label>
+      <default>0</default>
+    </entry>
+    <entry name="wideMediaControlsMode" type="Int">
+      <label>Visibility mode for media controls in wide media-player tasks.</label>
+      <default>1</default>
+    </entry>
+    <entry name="wideMediaControlsBackgroundStyle" type="Int">
+      <label>Background treatment for media controls in wide media-player tasks.</label>
+      <default>0</default>
     </entry>
     <entry name="replaceMediaPlayerIconWithAlbumArt" type="Bool">
       <label>Whether to replace a matched media player's task icon with album art when available.</label>

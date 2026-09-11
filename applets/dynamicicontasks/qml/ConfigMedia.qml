@@ -16,11 +16,19 @@ KCMUtils.SimpleKCM {
 
     property bool cfg_indicateAudioStreams
     property bool cfg_interactiveMute
+    property alias cfg_audioStreamIndicatorVisibility: audioStreamIndicatorVisibility.currentIndex
     property alias cfg_tooltipControls: tooltipControls.checked
     property alias cfg_showMediaProgress: showMediaProgress.checked
+    property alias cfg_mediaPlayerColorSource: mediaPlayerColorSource.currentIndex
     property alias cfg_expandMediaPlayerTasks: expandMediaPlayerTasks.checked
     property alias cfg_mediaPlayerTaskMinWidth: mediaPlayerTaskMinWidth.value
     property alias cfg_mediaPlayerTaskMaxWidth: mediaPlayerTaskMaxWidth.value
+    property alias cfg_showMediaMetadata: showMediaMetadata.checked
+    property alias cfg_mediaMetadataLayout: mediaMetadataLayout.currentIndex
+    property bool cfg_scrollMediaMetadata
+    property int cfg_mediaMetadataScrollMode
+    property alias cfg_wideMediaControlsMode: wideMediaControlsMode.currentIndex
+    property alias cfg_wideMediaControlsBackgroundStyle: wideMediaControlsBackgroundStyle.currentIndex
     property alias cfg_replaceMediaPlayerIconWithAlbumArt: replaceMediaPlayerIconWithAlbumArt.checked
     property alias cfg_showAppIconOnAlbumArt: showAppIconOnAlbumArt.checked
     property alias cfg_albumArtExcludedAppIds: albumArtExcludedAppIds.text
@@ -59,6 +67,17 @@ KCMUtils.SimpleKCM {
             enabled: indicateAudioStreams.checked && root.plasmaPaAvailable
         }
 
+        QQC2.ComboBox {
+            id: audioStreamIndicatorVisibility
+            Kirigami.FormData.label: i18nc("@label:listbox", "Audio indicator:")
+            enabled: indicateAudioStreams.checked && root.plasmaPaAvailable
+            model: [
+                i18nc("@item:inlistbox", "Always visible"),
+                i18nc("@item:inlistbox", "Show on hover"),
+                i18nc("@item:inlistbox", "Show when muted, otherwise on hover")
+            ]
+        }
+
         Item {
             Kirigami.FormData.isSection: true
         }
@@ -67,6 +86,15 @@ KCMUtils.SimpleKCM {
             id: showMediaProgress
             Kirigami.FormData.label: i18nc("@label for media settings", "Playback:")
             text: i18nc("@option:check", "Show playback progress in the edge indicator")
+        }
+
+        QQC2.ComboBox {
+            id: mediaPlayerColorSource
+            Kirigami.FormData.label: i18nc("@label:listbox", "Media-player colors:")
+            model: [
+                i18nc("@item:inlistbox", "Application icon"),
+                i18nc("@item:inlistbox", "Album art")
+            ]
         }
 
         QQC2.CheckBox {
@@ -112,6 +140,61 @@ KCMUtils.SimpleKCM {
             text: i18nc("@info", "The task rests at the minimum width; the maximum limits later content-driven growth. Horizontal panels only.")
             wrapMode: Text.Wrap
             color: Kirigami.Theme.disabledTextColor
+        }
+
+        QQC2.CheckBox {
+            id: showMediaMetadata
+            Kirigami.FormData.label: i18nc("@label for media settings", "Metadata:")
+            text: i18nc("@option:check", "Show artist and track in wide media tasks")
+        }
+
+        QQC2.ComboBox {
+            id: mediaMetadataLayout
+            Kirigami.FormData.label: i18nc("@label:listbox", "Metadata layout:")
+            enabled: showMediaMetadata.checked
+            model: [
+                i18nc("@item:inlistbox", "Auto"),
+                i18nc("@item:inlistbox", "Stacked"),
+                i18nc("@item:inlistbox", "Inline")
+            ]
+        }
+
+        QQC2.ComboBox {
+            id: mediaMetadataScrollMode
+            Kirigami.FormData.label: i18nc("@label:listbox", "Overflowing text:")
+            enabled: showMediaMetadata.checked
+            currentIndex: root.cfg_scrollMediaMetadata
+                ? root.cfg_mediaMetadataScrollMode + 1
+                : 0
+            model: [
+                i18nc("@item:inlistbox", "Disabled"),
+                i18nc("@item:inlistbox", "Back and forth"),
+                i18nc("@item:inlistbox", "Loop left")
+            ]
+            onActivated: index => {
+                root.cfg_scrollMediaMetadata = index > 0;
+                root.cfg_mediaMetadataScrollMode = Math.max(0, index - 1);
+            }
+        }
+
+        QQC2.ComboBox {
+            id: wideMediaControlsMode
+            Kirigami.FormData.label: i18nc("@label:listbox", "Wide task controls:")
+            enabled: expandMediaPlayerTasks.checked
+            model: [
+                i18nc("@item:inlistbox", "Always show"),
+                i18nc("@item:inlistbox", "Show on hover")
+            ]
+        }
+
+        QQC2.ComboBox {
+            id: wideMediaControlsBackgroundStyle
+            Kirigami.FormData.label: i18nc("@label:listbox", "Control background:")
+            enabled: expandMediaPlayerTasks.checked
+            model: [
+                i18nc("@item:inlistbox", "Solid pill with shadow"),
+                i18nc("@item:inlistbox", "Diffuse backdrop")
+            ]
         }
 
         Item {

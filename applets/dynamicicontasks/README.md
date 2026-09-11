@@ -12,7 +12,10 @@ the stock task model and interactions, while adding:
 - configurable shared opacity for inactive task edges and inactive-window
   markers in both segmented modes;
 - optional MPRIS playback progress in the existing edge indicator for
-  single-window media players, with a dimmed frozen fill while paused;
+  single-window media players, with a dimmed frozen fill while paused and an
+  selectable album-art or app-icon color with automatic fallback;
+- configurable audio-indicator visibility: always, hover only, or persist
+  while muted and otherwise appear on hover;
 - shared, configurable task-desktop-ID to MPRIS-ID aliases used by media
   progress, tooltip controls, context-menu actions, and mouse media actions;
 - optional album-art task icons with automatic application-icon fallback and
@@ -24,7 +27,9 @@ the stock task model and interactions, while adding:
   configurable responsive minimum/maximum width while non-media and
   album-art-excluded tasks remain icon-only; wide tasks prefer their minimum
   width without absorbing spare panel space and use the maximum only as a
-  content-growth ceiling;
+  content-growth ceiling, with optional artist/track metadata in stacked,
+  inline, or automatic responsive layouts, plus previous/play-next controls
+  that can always be shown or overlaid only on hover;
 - a dedicated Media settings tab for playback controls, progress, album art,
   exclusions, and task-to-MPRIS ID mappings;
 - optional animations for segment emphasis, position, size, shape, and entry;

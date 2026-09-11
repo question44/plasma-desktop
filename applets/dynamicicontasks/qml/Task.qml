@@ -9,6 +9,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects as GE
 
 import org.kde.plasma.core as PlasmaCore
 import org.kde.ksvg as KSvg
@@ -40,19 +41,22 @@ PlasmaCore.ToolTipArea {
     implicitWidth: tasksRoot.vertical
         ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Math.min(TaskManagerApplet.LayoutMetrics.preferredMaxWidth(), tasksRoot.width / Plasmoid.configuration.maxStripes))
         : (expandedMediaTask
-            ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Plasmoid.configuration.mediaPlayerTaskMinWidth)
+            ? mediaTaskPreferredWidth
             : 0)
 
     // A wide media task has an explicit content-driven preferred width. Letting
     // it fill its grid cell makes spare panel space push it straight to the
     // configured maximum instead of resting near that preferred size.
-    Layout.fillWidth: !expandedMediaTask
+    // Let only metadata that needs additional room absorb spare grid width.
+    // This keeps short media tasks near their configured minimum but gives a
+    // longer title the panel space it can use before marquee becomes necessary.
+    Layout.fillWidth: !expandedMediaTask || mediaTaskNeedsAdditionalWidth
     Layout.fillHeight: !inPopup
     Layout.minimumWidth: expandedMediaTask
-        ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Plasmoid.configuration.mediaPlayerTaskMinWidth)
+        ? mediaTaskPreferredWidth
         : -1
     Layout.preferredWidth: expandedMediaTask
-        ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Plasmoid.configuration.mediaPlayerTaskMinWidth)
+        ? mediaTaskPreferredWidth
         : -1
     Layout.maximumWidth: tasksRoot.vertical
         ? -1
@@ -87,6 +91,7 @@ PlasmaCore.ToolTipArea {
     property bool delayAudioStreamIndicator: false
     property bool completed: false
     readonly property bool audioIndicatorsEnabled: Plasmoid.configuration.indicateAudioStreams
+    readonly property int audioStreamIndicatorVisibility: Plasmoid.configuration.audioStreamIndicatorVisibility
     readonly property bool tooltipControlsEnabled: Plasmoid.configuration.tooltipControls
     readonly property bool hasAudioStream: audioStreams.length > 0
     readonly property bool playingAudio: hasAudioStream && audioStreams.some(item => !item.corked)
@@ -105,6 +110,88 @@ PlasmaCore.ToolTipArea {
         && !mediaPresentationExcluded
         && (mediaProgressPlaying || mediaProgressPaused)
     readonly property bool expandedMediaTask: mediaTaskExpansionCandidate
+    readonly property bool mediaMetadataEnabled: expandedMediaTask
+        && Plasmoid.configuration.showMediaMetadata
+        && (mediaTrackText.length > 0 || mediaArtistText.length > 0)
+    readonly property string mediaTrackText: String(mediaPlayerData?.track ?? "")
+    readonly property string mediaArtistText: String(mediaPlayerData?.artist ?? "")
+    readonly property string mediaInlineText: mediaArtistText.length > 0 && mediaTrackText.length > 0
+        ? mediaArtistText + " - " + mediaTrackText
+        : (mediaTrackText.length > 0 ? mediaTrackText : mediaArtistText)
+    readonly property real mediaTrackEstimatedWidth: mediaTrackText.length * Kirigami.Units.gridUnit * 0.42
+    readonly property real mediaInlineEstimatedWidth: mediaInlineText.length * Kirigami.Units.gridUnit * 0.42
+    readonly property real mediaTrackMarqueeWidth: Math.max(
+        mediaTrackMeasure.implicitWidth, mediaTrackEstimatedWidth)
+    readonly property real mediaInlineMarqueeWidth: Math.max(
+        mediaInlineMeasure.implicitWidth, mediaInlineEstimatedWidth)
+    readonly property real mediaAudioIndicatorReservation: audioStreamIcon !== null && audioStreamIcon.visible
+        ? Kirigami.Units.iconSizes.roundedIconSize(Math.min(height, Kirigami.Units.iconSizes.smallMedium))
+            + TaskManagerApplet.LayoutMetrics.labelMargin
+        : 0
+    readonly property bool mediaControlsAvailable: expandedMediaTask
+        && (mediaPlayerData?.canControl ?? false)
+    readonly property bool mediaControlsAlwaysVisible: Plasmoid.configuration.wideMediaControlsMode === 0
+    readonly property bool mediaControlsBlendIntoTask: Plasmoid.configuration.wideMediaControlsBackgroundStyle === 1
+    readonly property real mediaControlsButtonSize: Kirigami.Units.iconSizes.smallMedium
+    readonly property real mediaControlsHorizontalPadding: Kirigami.Units.smallSpacing * 1.5
+    readonly property real mediaControlsWidth: (mediaControlsButtonSize * 3)
+        + (Kirigami.Units.smallSpacing * 2) + (mediaControlsHorizontalPadding * 2)
+    readonly property real mediaControlsReservation: mediaControlsAvailable && mediaControlsAlwaysVisible
+        ? mediaControlsWidth + TaskManagerApplet.LayoutMetrics.labelMargin
+        : 0
+    readonly property color mediaMetadataFadeColor: {
+        const background = taskColorBackground.visible
+            ? taskColorBackground.color
+            : Kirigami.Theme.backgroundColor;
+        const alpha = taskColorBackground.visible
+            ? Math.min(0.5, Math.max(0.28, taskColorBackground.opacity))
+            : 0.42;
+        return Qt.rgba(background.r, background.g, background.b, alpha);
+    }
+    readonly property real mediaMetadataMarqueeGap: Kirigami.Units.gridUnit * 2
+    readonly property real mediaTaskPreferredWidth: {
+        const minimum = Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Plasmoid.configuration.mediaPlayerTaskMinWidth);
+        if (!mediaMetadataEnabled) {
+            return minimum;
+        }
+        const coverWidth = Math.max(TaskManagerApplet.LayoutMetrics.preferredMinHeight(), Kirigami.Units.iconSizes.medium);
+        const measuredTextWidth = Plasmoid.configuration.mediaMetadataLayout === 2
+            ? mediaInlineMeasure.implicitWidth
+            : Math.max(mediaTrackMeasure.implicitWidth, mediaArtistMeasure.implicitWidth);
+        // MPRIS metadata changes immediately, but Qt can polish a Text item's
+        // implicit width later. Keep the content-width request responsive in
+        // that gap with a conservative font-relative estimate.
+        const displayedCharacterCount = Plasmoid.configuration.mediaMetadataLayout === 2
+            ? mediaInlineText.length
+            : Math.max(mediaTrackText.length, mediaArtistText.length);
+        const estimatedTextWidth = displayedCharacterCount * Kirigami.Units.gridUnit * 0.42;
+        const textWidth = Math.max(measuredTextWidth, estimatedTextWidth);
+        // Match the metadata item's anchors: the cover starts after the left
+        // frame margin, text starts after one label margin, and ends before the
+        // right frame margin. The title metric is bold as the visible label is.
+        const desired = taskFrame.margins.left + coverWidth
+            + TaskManagerApplet.LayoutMetrics.labelMargin + textWidth
+            + mediaControlsReservation + mediaAudioIndicatorReservation + taskFrame.margins.right;
+        return Math.min(
+            Math.max(minimum, Plasmoid.configuration.mediaPlayerTaskMaxWidth),
+            Math.max(minimum, desired));
+    }
+    readonly property bool mediaTaskNeedsAdditionalWidth: expandedMediaTask
+        && mediaTaskPreferredWidth > Math.max(
+            TaskManagerApplet.LayoutMetrics.preferredMinWidth(),
+            Plasmoid.configuration.mediaPlayerTaskMinWidth) + 0.5
+    onMediaTaskPreferredWidthChanged: {
+        if (completed) {
+            ++tasksRoot.mediaLayoutRevision;
+            tasksRoot.requestLayout();
+        }
+    }
+    readonly property bool mediaMetadataInline: Plasmoid.configuration.mediaMetadataLayout === 2
+        || (Plasmoid.configuration.mediaMetadataLayout === 0
+            && mediaMetadata.height < mediaMetadataStackedMinimumHeight)
+    readonly property real mediaMetadataStackedMinimumHeight: Math.ceil(
+        mediaTrackTitle.implicitHeight + mediaArtistLabel.implicitHeight)
+
     readonly property bool mediaAlbumArtEligible: Plasmoid.configuration.replaceMediaPlayerIconWithAlbumArt
         && !model.IsGroupParent
         && (mediaProgressPlaying || mediaProgressPaused)
@@ -119,6 +206,12 @@ PlasmaCore.ToolTipArea {
     readonly property real mediaProgress: mediaProgressVisible
         ? Math.max(0, Math.min(1, mediaPlayerData.position / mediaPlayerData.length))
         : 0
+    readonly property bool mediaAlbumArtColorAvailable:
+        Plasmoid.configuration.mediaPlayerColorSource === 1
+        && !mediaPresentationExcluded
+        && String(mediaPlayerData?.artUrl ?? "").length > 0
+        && albumArtColors.palette.length > 0
+    readonly property color mediaProgressColor: taskAccentColor
 
     function findMediaPlayer(): Mpris.PlayerContainer {
         if (model.IsGroupParent) {
@@ -136,6 +229,31 @@ PlasmaCore.ToolTipArea {
         mediaPlayerData = findMediaPlayer();
     }
 
+    function restartMetadataMarquee(): void {
+        mediaTrackTitle.x = 0;
+        mediaInlineTitle.x = 0;
+
+        if (!Plasmoid.configuration.scrollMediaMetadata) {
+            return;
+        }
+
+        if (mediaMetadataInline) {
+            if (mediaInlineEstimatedWidth > inlineMetadata.width) {
+                if (Plasmoid.configuration.mediaMetadataScrollMode === 0) {
+                    mediaInlineMarquee.restart();
+                } else {
+                    mediaInlineOneWayMarquee.restart();
+                }
+            }
+        } else if (mediaTrackEstimatedWidth > mediaTrackViewport.width) {
+            if (Plasmoid.configuration.mediaMetadataScrollMode === 0) {
+                mediaTrackMarquee.restart();
+            } else {
+                mediaTrackOneWayMarquee.restart();
+            }
+        }
+    }
+
     Timer {
         interval: 1000
         repeat: true
@@ -144,17 +262,30 @@ PlasmaCore.ToolTipArea {
         onTriggered: task.mediaPlayerData?.updatePosition()
     }
 
-    readonly property bool highlighted: (inPopup && activeFocus) || (!inPopup && containsMouse)
+    // Switching between stacked and inline metadata does not alter the track
+    // string, so no label text signal is emitted to restart its marquee.
+    Timer {
+        id: metadataMarqueeRestartTimer
+
+        interval: 50
+        repeat: false
+        onTriggered: task.restartMetadataMarquee()
+    }
+
+    readonly property bool highlighted: (inPopup && activeFocus) || (!inPopup && (containsMouse || mediaTaskControlsHover.hovered))
         || (task.contextMenu && task.contextMenu.status === PlasmaExtras.Menu.Open)
         || (!!tasksRoot.groupDialog && tasksRoot.groupDialog.visualParent === task)
-    readonly property bool colorHover: !inPopup && containsMouse && Plasmoid.configuration.taskHoverEffect
+    readonly property bool colorHover: !inPopup && (containsMouse || mediaTaskControlsHover.hovered)
+        && Plasmoid.configuration.taskHoverEffect
     readonly property color taskAccentColor: {
         if (!Plasmoid.configuration.dynamicActiveBackground) {
             return Plasmoid.configuration.fixedActiveBackgroundColor;
         }
-        const extractedColor = Plasmoid.configuration.activeColorSource === 1
-            ? taskIconColors.dominant
-            : taskIconColors.highlight;
+        const extractedColor = mediaAlbumArtColorAvailable
+            ? albumArtColors.highlight
+            : (Plasmoid.configuration.activeColorSource === 1
+                ? taskIconColors.dominant
+                : taskIconColors.highlight);
         return ensurePanelContrast(extractedColor);
     }
 
@@ -173,6 +304,7 @@ PlasmaCore.ToolTipArea {
     }
 
     active: !inPopup && !tasksRoot.groupDialog && task.contextMenu?.status !== PlasmaExtras.Menu.Open
+        && !mediaTaskControlsHover.hovered
     interactive: model.IsWindow || mainItem.playerData
     location: Plasmoid.location
     mainItem: !Plasmoid.configuration.showToolTips || !model.IsWindow ? pinnedAppToolTipDelegate : openWindowToolTipDelegate
@@ -312,6 +444,18 @@ PlasmaCore.ToolTipArea {
 
         function onMediaPlayerIdAliasesChanged(): void {
             task.refreshMediaPlayer();
+        }
+
+        function onMediaMetadataLayoutChanged(): void {
+            metadataMarqueeRestartTimer.restart();
+        }
+
+        function onScrollMediaMetadataChanged(): void {
+            metadataMarqueeRestartTimer.restart();
+        }
+
+        function onMediaMetadataScrollModeChanged(): void {
+            metadataMarqueeRestartTimer.restart();
         }
     }
 
@@ -655,6 +799,27 @@ PlasmaCore.ToolTipArea {
         fallbackHighlight: Plasmoid.configuration.fixedActiveBackgroundColor
     }
 
+    // This remains independent from album-art icon replacement: a player can
+    // keep its app icon while its progress indicator follows the current cover.
+    // ImageColors needs the decoded Image rather than a raw MPRIS URL, and the
+    // small source size keeps this color-only load inexpensive.
+    Image {
+        id: albumArtColorSource
+
+        visible: false
+        asynchronous: true
+        cache: true
+        source: task.mediaPresentationExcluded ? "" : (task.mediaPlayerData?.artUrl ?? "")
+        sourceSize.width: 128
+        sourceSize.height: 128
+    }
+
+    Kirigami.ImageColors {
+        id: albumArtColors
+
+        source: albumArtColorSource.status === Image.Ready ? albumArtColorSource : null
+    }
+
     Rectangle {
         id: taskColorBackground
 
@@ -954,17 +1119,484 @@ PlasmaCore.ToolTipArea {
         }
     }
 
+    Item {
+        id: mediaMetadata
+
+        visible: task.mediaMetadataEnabled
+        z: 1
+        anchors {
+            left: iconBox.right
+            leftMargin: TaskManagerApplet.LayoutMetrics.labelMargin
+            right: parent.right
+            rightMargin: taskFrame.margins.right + task.mediaControlsReservation
+                + task.mediaAudioIndicatorReservation
+            top: parent.top
+            bottom: parent.bottom
+            topMargin: taskFrame.margins.top
+            bottomMargin: taskFrame.margins.bottom
+        }
+
+        Column {
+            id: stackedMetadata
+
+            anchors.fill: parent
+            visible: !task.mediaMetadataInline
+            spacing: 0
+
+            Item {
+                id: mediaTrackViewport
+
+                width: parent.width
+                height: parent.height / 2
+                clip: true
+                onVisibleChanged: if (visible) metadataMarqueeRestartTimer.restart()
+                onWidthChanged: if (visible) metadataMarqueeRestartTimer.restart()
+
+                PlasmaComponents3.Label {
+                    id: mediaTrackTitle
+
+                    x: 0
+                    width: task.mediaTrackMarqueeWidth
+                    height: parent.height
+                    text: task.mediaTrackText
+                    font: {
+                        const titleFont = Kirigami.Theme.defaultFont;
+                        titleFont.bold = true;
+                        return titleFont;
+                    }
+                    elide: Text.ElideNone
+                    wrapMode: Text.NoWrap
+                    verticalAlignment: Text.AlignVCenter
+                    onTextChanged: metadataMarqueeRestartTimer.restart()
+                }
+
+                // The duplicate makes a one-direction marquee wrap without a
+                // visible jump: as it reaches x=0, the original starts again.
+                PlasmaComponents3.Label {
+                    id: mediaTrackTitleLoopCopy
+
+                    visible: Plasmoid.configuration.scrollMediaMetadata
+                        && Plasmoid.configuration.mediaMetadataScrollMode === 1
+                        && task.mediaTrackEstimatedWidth > mediaTrackViewport.width
+                    x: mediaTrackTitle.x + task.mediaTrackMarqueeWidth + task.mediaMetadataMarqueeGap
+                    width: task.mediaTrackMarqueeWidth
+                    height: parent.height
+                    text: task.mediaTrackText
+                    font: mediaTrackTitle.font
+                    elide: Text.ElideNone
+                    wrapMode: Text.NoWrap
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                SequentialAnimation {
+                    id: mediaTrackMarquee
+
+                    running: mediaTrackViewport.visible
+                        && Plasmoid.configuration.scrollMediaMetadata
+                        && Plasmoid.configuration.mediaMetadataScrollMode === 0
+                        && task.mediaTrackEstimatedWidth > mediaTrackViewport.width
+                    loops: Animation.Infinite
+
+                    PauseAnimation {
+                        duration: 1200
+                    }
+                    NumberAnimation {
+                        target: mediaTrackTitle
+                        property: "x"
+                        from: 0
+                        to: -(task.mediaTrackMarqueeWidth - mediaTrackViewport.width)
+                        duration: Math.max(Kirigami.Units.longDuration * 3,
+                            (task.mediaTrackMarqueeWidth - mediaTrackViewport.width) * 18)
+                        easing.type: Easing.InOutSine
+                    }
+                    PauseAnimation {
+                        duration: 1000
+                    }
+                    NumberAnimation {
+                        target: mediaTrackTitle
+                        property: "x"
+                        to: 0
+                        duration: Math.max(Kirigami.Units.longDuration * 3,
+                            (task.mediaTrackMarqueeWidth - mediaTrackViewport.width) * 18)
+                        easing.type: Easing.InOutSine
+                    }
+                }
+
+                SequentialAnimation {
+                    id: mediaTrackOneWayMarquee
+
+                    running: mediaTrackViewport.visible
+                        && Plasmoid.configuration.scrollMediaMetadata
+                        && Plasmoid.configuration.mediaMetadataScrollMode === 1
+                        && task.mediaTrackEstimatedWidth > mediaTrackViewport.width
+                    loops: Animation.Infinite
+
+                    NumberAnimation {
+                        target: mediaTrackTitle
+                        property: "x"
+                        from: 0
+                        to: -(task.mediaTrackMarqueeWidth + task.mediaMetadataMarqueeGap)
+                        duration: Math.max(Kirigami.Units.longDuration * 3,
+                            (task.mediaTrackMarqueeWidth + task.mediaMetadataMarqueeGap) * 18)
+                        easing.type: Easing.Linear
+                    }
+                }
+
+                Rectangle {
+                    z: 1
+                    width: Math.min(Kirigami.Units.gridUnit, parent.width / 3)
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    visible: task.mediaTrackEstimatedWidth > parent.width
+                        && (Plasmoid.configuration.mediaMetadataScrollMode === 1
+                            ? mediaTrackTitleLoopCopy.x + mediaTrackTitleLoopCopy.width
+                                > parent.width + 0.5
+                            : mediaTrackTitle.x + task.mediaTrackMarqueeWidth
+                                > parent.width + 0.5)
+                        && !task.highlighted && !task.model.IsActive
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0; color: Qt.rgba(task.mediaMetadataFadeColor.r, task.mediaMetadataFadeColor.g, task.mediaMetadataFadeColor.b, 0) }
+                        GradientStop { position: 1; color: task.mediaMetadataFadeColor }
+                    }
+                }
+
+                Rectangle {
+                    z: 1
+                    width: Math.min(Kirigami.Units.gridUnit, parent.width / 3)
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    visible: task.mediaTrackEstimatedWidth > parent.width && mediaTrackTitle.x < -0.5
+                        && !task.highlighted && !task.model.IsActive
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0; color: task.mediaMetadataFadeColor }
+                        GradientStop { position: 1; color: Qt.rgba(task.mediaMetadataFadeColor.r, task.mediaMetadataFadeColor.g, task.mediaMetadataFadeColor.b, 0) }
+                    }
+                }
+            }
+
+            PlasmaComponents3.Label {
+                id: mediaArtistLabel
+
+                width: parent.width
+                height: parent.height / 2
+                text: task.mediaArtistText
+                font: Kirigami.Theme.smallFont
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignLeft
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
+        Item {
+            id: inlineMetadata
+
+            anchors.fill: parent
+            visible: task.mediaMetadataInline
+            clip: true
+            onVisibleChanged: if (visible) metadataMarqueeRestartTimer.restart()
+            onWidthChanged: if (visible) metadataMarqueeRestartTimer.restart()
+
+            PlasmaComponents3.Label {
+                id: mediaInlineTitle
+
+                x: 0
+                width: task.mediaInlineMarqueeWidth
+                height: parent.height
+                text: task.mediaInlineText
+                elide: Text.ElideNone
+                wrapMode: Text.NoWrap
+                font: Kirigami.Theme.defaultFont
+                verticalAlignment: Text.AlignVCenter
+                onTextChanged: metadataMarqueeRestartTimer.restart()
+            }
+
+            PlasmaComponents3.Label {
+                id: mediaInlineTitleLoopCopy
+
+                visible: Plasmoid.configuration.scrollMediaMetadata
+                    && Plasmoid.configuration.mediaMetadataScrollMode === 1
+                    && task.mediaInlineEstimatedWidth > inlineMetadata.width
+                x: mediaInlineTitle.x + task.mediaInlineMarqueeWidth + task.mediaMetadataMarqueeGap
+                width: task.mediaInlineMarqueeWidth
+                height: parent.height
+                text: task.mediaInlineText
+                font: mediaInlineTitle.font
+                elide: Text.ElideNone
+                wrapMode: Text.NoWrap
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            SequentialAnimation {
+                id: mediaInlineMarquee
+
+                running: inlineMetadata.visible
+                    && Plasmoid.configuration.scrollMediaMetadata
+                    && Plasmoid.configuration.mediaMetadataScrollMode === 0
+                    && task.mediaInlineEstimatedWidth > inlineMetadata.width
+                loops: Animation.Infinite
+
+                PauseAnimation {
+                    duration: 1200
+                }
+                NumberAnimation {
+                    target: mediaInlineTitle
+                    property: "x"
+                    from: 0
+                    to: -(task.mediaInlineMarqueeWidth - inlineMetadata.width)
+                    duration: Math.max(Kirigami.Units.longDuration * 3,
+                        (task.mediaInlineMarqueeWidth - inlineMetadata.width) * 18)
+                    easing.type: Easing.InOutSine
+                }
+                PauseAnimation {
+                    duration: 1000
+                }
+                NumberAnimation {
+                    target: mediaInlineTitle
+                    property: "x"
+                    to: 0
+                    duration: Math.max(Kirigami.Units.longDuration * 3,
+                        (task.mediaInlineMarqueeWidth - inlineMetadata.width) * 18)
+                    easing.type: Easing.InOutSine
+                    }
+                }
+            }
+
+            SequentialAnimation {
+                id: mediaInlineOneWayMarquee
+
+                running: inlineMetadata.visible
+                    && Plasmoid.configuration.scrollMediaMetadata
+                    && Plasmoid.configuration.mediaMetadataScrollMode === 1
+                    && task.mediaInlineEstimatedWidth > inlineMetadata.width
+                loops: Animation.Infinite
+
+                NumberAnimation {
+                    target: mediaInlineTitle
+                    property: "x"
+                    from: 0
+                    to: -(task.mediaInlineMarqueeWidth + task.mediaMetadataMarqueeGap)
+                    duration: Math.max(Kirigami.Units.longDuration * 3,
+                        (task.mediaInlineMarqueeWidth + task.mediaMetadataMarqueeGap) * 18)
+                    easing.type: Easing.Linear
+                }
+            }
+
+            Rectangle {
+                z: 1
+                width: Math.min(Kirigami.Units.gridUnit, parent.width / 3)
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                visible: task.mediaInlineEstimatedWidth > parent.width
+                    && (Plasmoid.configuration.mediaMetadataScrollMode === 1
+                        ? mediaInlineTitleLoopCopy.x + mediaInlineTitleLoopCopy.width
+                            > parent.width + 0.5
+                        : mediaInlineTitle.x + task.mediaInlineMarqueeWidth
+                            > parent.width + 0.5)
+                    && !task.highlighted && !task.model.IsActive
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: Qt.rgba(task.mediaMetadataFadeColor.r, task.mediaMetadataFadeColor.g, task.mediaMetadataFadeColor.b, 0) }
+                    GradientStop { position: 1; color: task.mediaMetadataFadeColor }
+                }
+            }
+
+            Rectangle {
+                z: 1
+                width: Math.min(Kirigami.Units.gridUnit, parent.width / 3)
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                visible: task.mediaInlineEstimatedWidth > parent.width && mediaInlineTitle.x < -0.5
+                    && !task.highlighted && !task.model.IsActive
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: task.mediaMetadataFadeColor }
+                    GradientStop { position: 1; color: Qt.rgba(task.mediaMetadataFadeColor.r, task.mediaMetadataFadeColor.g, task.mediaMetadataFadeColor.b, 0) }
+                }
+        }
+    }
+
+    // Keep the diffuse field within the task even when its edge spreads beyond
+    // the controls themselves. This avoids tinting neighboring panel items.
+    Item {
+        id: mediaControlsBackdropBounds
+
+        visible: task.mediaControlsAvailable && task.mediaControlsBlendIntoTask
+        opacity: mediaTaskControls.opacity
+        z: 1.5
+        anchors.fill: parent
+        clip: true
+
+        GE.RadialGradient {
+            readonly property real spread: Math.round(Kirigami.Units.gridUnit * 1.25)
+
+            x: Math.max(0, mediaTaskControls.x - spread)
+            y: Math.max(0, mediaTaskControls.y - spread)
+            width: Math.min(parent.width - x, mediaTaskControls.width + (spread * 2))
+            height: Math.min(parent.height - y, mediaTaskControls.height + (spread * 2))
+            horizontalRadius: width * 0.58
+            verticalRadius: height * 0.78
+            gradient: Gradient {
+                GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0.42) }
+                GradientStop { position: 0.38; color: Qt.rgba(0, 0, 0, 0.26) }
+                GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0) }
+            }
+        }
+    }
+
+    Item {
+        id: mediaTaskControls
+
+        visible: task.mediaControlsAvailable
+        enabled: opacity > 0
+        z: 2
+        width: task.mediaControlsWidth
+        height: task.mediaControlsButtonSize
+        opacity: task.mediaControlsAlwaysVisible || task.containsMouse || mediaTaskControlsHover.hovered ? 1 : 0
+        anchors {
+            right: parent.right
+            rightMargin: taskFrame.margins.right + task.mediaAudioIndicatorReservation
+            verticalCenter: parent.verticalCenter
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Kirigami.Units.longDuration
+                easing.type: Easing.InOutQuad
+            }
+        }
+
+        // The solid option is deliberately a conventional raised control
+        // surface. The diffuse option below has no hard surface or shadow.
+        Kirigami.ShadowedRectangle {
+            visible: !task.mediaControlsBlendIntoTask
+            anchors.fill: parent
+            radius: Math.min(width, height) / 2
+            color: Qt.rgba(Kirigami.Theme.backgroundColor.r,
+                Kirigami.Theme.backgroundColor.g, Kirigami.Theme.backgroundColor.b,
+                0.78)
+            shadow.size: Math.max(6, Math.round(Kirigami.Units.gridUnit * 1.75))
+            shadow.xOffset: 0
+            shadow.yOffset: 1
+            shadow.color: Qt.rgba(0, 0, 0, 0.32)
+        }
+
+        HoverHandler {
+            id: mediaTaskControlsHover
+
+            onHoveredChanged: {
+                if (hovered) {
+                    task.hideToolTip();
+                }
+            }
+        }
+
+        Row {
+            z: 1
+            anchors {
+                fill: parent
+                leftMargin: task.mediaControlsHorizontalPadding
+                rightMargin: task.mediaControlsHorizontalPadding
+            }
+            spacing: Kirigami.Units.smallSpacing
+
+            PlasmaComponents3.ToolButton {
+                width: task.mediaControlsButtonSize
+                height: width
+                enabled: task.mediaPlayerData?.canGoPrevious ?? false
+                icon.name: Application.layoutDirection === Qt.RightToLeft
+                    ? "media-skip-forward" : "media-skip-backward"
+                Accessible.name: i18nc("@action:button", "Previous track")
+                onClicked: task.mediaPlayerData?.Previous()
+            }
+
+            PlasmaComponents3.ToolButton {
+                width: task.mediaControlsButtonSize
+                height: width
+                enabled: task.mediaProgressPlaying
+                    ? (task.mediaPlayerData?.canPause ?? false)
+                    : (task.mediaPlayerData?.canPlay ?? false)
+                icon.name: task.mediaProgressPlaying
+                    ? "media-playback-pause" : "media-playback-start"
+                Accessible.name: task.mediaProgressPlaying
+                    ? i18nc("@action:button", "Pause")
+                    : i18nc("@action:button", "Play")
+                onClicked: {
+                    if (task.mediaProgressPlaying) {
+                        task.mediaPlayerData?.Pause();
+                    } else {
+                        task.mediaPlayerData?.Play();
+                    }
+                }
+            }
+
+            PlasmaComponents3.ToolButton {
+                width: task.mediaControlsButtonSize
+                height: width
+                enabled: task.mediaPlayerData?.canGoNext ?? false
+                icon.name: Application.layoutDirection === Qt.RightToLeft
+                    ? "media-skip-backward" : "media-skip-forward"
+                Accessible.name: i18nc("@action:button", "Next track")
+                onClicked: task.mediaPlayerData?.Next()
+            }
+        }
+    }
+
+    // These are independent from the metadata item's assigned width. Using the
+    // rendered labels' implicit widths creates a feedback loop because those
+    // labels fill the task whose preferred width is being calculated.
+    Text {
+        id: mediaTrackMeasure
+
+        opacity: 0
+        width: 0
+        height: 0
+        text: task.mediaTrackText
+        font: {
+            const titleFont = Kirigami.Theme.defaultFont;
+            titleFont.bold = true;
+            return titleFont;
+        }
+    }
+
+    Text {
+        id: mediaArtistMeasure
+
+        opacity: 0
+        width: 0
+        height: 0
+        text: task.mediaArtistText
+        font: Kirigami.Theme.smallFont
+    }
+
+    Text {
+        id: mediaInlineMeasure
+
+        opacity: 0
+        width: 0
+        height: 0
+        text: task.mediaInlineText
+        font: Kirigami.Theme.defaultFont
+    }
+
     PlasmaComponents3.Label {
         id: label
 
         visible: (task.inPopup || !task.tasksRoot.iconsOnly && !task.model.IsLauncher
+            && !task.mediaMetadataEnabled
             && (parent.width - iconBox.height - Kirigami.Units.smallSpacing) >= TaskManagerApplet.LayoutMetrics.spaceRequiredToShowText())
 
         anchors {
             fill: parent
             leftMargin: taskFrame.margins.left + iconBox.width + TaskManagerApplet.LayoutMetrics.labelMargin
             topMargin: taskFrame.margins.top
-            rightMargin: taskFrame.margins.right + (task.audioStreamIcon !== null && task.audioStreamIcon.visible ? (task.audioStreamIcon.width + TaskManagerApplet.LayoutMetrics.labelMargin) : 0)
+            rightMargin: taskFrame.margins.right + task.mediaControlsReservation
+                + (task.audioStreamIcon !== null && task.audioStreamIcon.visible ? (task.audioStreamIcon.width + TaskManagerApplet.LayoutMetrics.labelMargin) : 0)
             bottomMargin: taskFrame.margins.bottom
         }
 
@@ -1078,7 +1710,9 @@ PlasmaCore.ToolTipArea {
                 required property int index
                 property bool initialized: false
 
-                color: task.taskAccentColor
+                color: runningIndicator.showsMediaProgress
+                    ? task.mediaProgressColor
+                    : task.taskAccentColor
                 opacity: {
                     if (runningIndicator.showsMediaProgress) {
                         return 0.28;
@@ -1150,7 +1784,7 @@ PlasmaCore.ToolTipArea {
 
         Rectangle {
             visible: runningIndicator.showsMediaProgress
-            color: task.taskAccentColor
+            color: task.mediaProgressColor
             opacity: task.mediaProgressPlaying ? 1 : 0.6
             radius: runningIndicator.indicatorThickness / 2
 
@@ -1175,6 +1809,9 @@ PlasmaCore.ToolTipArea {
             }
             Behavior on opacity {
                 NumberAnimation { duration: Kirigami.Units.shortDuration }
+            }
+            Behavior on color {
+                ColorAnimation { duration: Kirigami.Units.shortDuration }
             }
         }
     }

@@ -35,6 +35,10 @@ PlasmoidItem {
     readonly property bool iconsOnly: true
     property Task toolTipOpenedByClick
     property Task toolTipAreaItem
+    // Explicit dependency for dynamic delegate media widths. Iterating a
+    // layout's children does not always make the outer size hint re-evaluate
+    // when only one child's attached width changes.
+    property int mediaLayoutRevision: 0
 
     readonly property Component contextMenuComponent: Qt.createComponent("ContextMenu.qml")
     readonly property Component pulseAudioComponent: Qt.createComponent("PulseAudio.qml")
@@ -74,7 +78,7 @@ PlasmoidItem {
         if (vertical) {
             return Kirigami.Units.gridUnit * 10;
         }
-        return taskList.Layout.preferredWidth
+        return taskList.Layout.preferredWidth + (mediaLayoutRevision * 0)
     }
     Layout.preferredHeight: {
         if (shouldShrinkToZero) {
@@ -450,6 +454,7 @@ PlasmoidItem {
                     return Math.round(totalMaxWidth / widthOccupation);
                 }
                 Layout.preferredWidth: {
+                    const mediaLayoutRevision = tasks.mediaLayoutRevision;
                     const totalPreferredWidth = children.reduce((accumulator, child) => {
                             const preferredWidth = child.Layout.preferredWidth;
                             if (isFinite(preferredWidth) && preferredWidth > 0) {
@@ -460,7 +465,7 @@ PlasmoidItem {
                             }
                             return accumulator;
                         }, 0);
-                    return Math.round(totalPreferredWidth / widthOccupation);
+                    return Math.round(totalPreferredWidth / widthOccupation) + (mediaLayoutRevision * 0);
                 }
                 Layout.maximumHeight: {
                     const totalMaxHeight = children.reduce((accumulator, child) => {
