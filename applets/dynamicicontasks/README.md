@@ -21,6 +21,8 @@ the stock task model and interactions, while adding:
 - optional album-art task icons with automatic application-icon fallback and
   an optional shadowed application-icon corner badge, plus a per-application exclusion
   list editable from Media settings or each matched player's context menu;
+  configurable inset padding, metadata gap, and square, adjustable-squircle,
+  or rounded/circular cover shapes;
 - buffered album-art changes that retain the previous cover while the next one
   loads, then cross-fade between them without flashing the application icon;
 - optional wider playing/paused media tasks on horizontal panels, with a

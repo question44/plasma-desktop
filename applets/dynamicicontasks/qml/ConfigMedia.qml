@@ -31,6 +31,10 @@ KCMUtils.SimpleKCM {
     property alias cfg_wideMediaControlsBackgroundStyle: wideMediaControlsBackgroundStyle.currentIndex
     property alias cfg_replaceMediaPlayerIconWithAlbumArt: replaceMediaPlayerIconWithAlbumArt.checked
     property alias cfg_showAppIconOnAlbumArt: showAppIconOnAlbumArt.checked
+    property alias cfg_albumArtPadding: albumArtPadding.value
+    property alias cfg_albumArtShape: albumArtShape.currentIndex
+    property alias cfg_albumArtSquircleRoundness: albumArtSquircleRoundness.value
+    property alias cfg_albumArtMetadataGap: albumArtMetadataGap.value
     property alias cfg_albumArtExcludedAppIds: albumArtExcludedAppIds.text
     property alias cfg_mediaPlayerIdAliases: mediaPlayerIdAliases.text
 
@@ -219,6 +223,51 @@ KCMUtils.SimpleKCM {
                 : 0
             text: i18nc("@option:check", "Show application icon in the corner")
             enabled: replaceMediaPlayerIconWithAlbumArt.checked
+        }
+
+        QQC2.SpinBox {
+            id: albumArtPadding
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Padding:")
+            from: 0
+            to: 24
+            stepSize: 1
+            enabled: replaceMediaPlayerIconWithAlbumArt.checked
+            textFromValue: value => i18nc("@item:valuesuffix pixels", "%1 px", value)
+            valueFromText: text => parseInt(text)
+        }
+
+        QQC2.ComboBox {
+            id: albumArtShape
+            Kirigami.FormData.label: i18nc("@label:listbox", "Shape:")
+            enabled: replaceMediaPlayerIconWithAlbumArt.checked
+            model: [
+                i18nc("@item:inlistbox", "Square"),
+                i18nc("@item:inlistbox", "Squircle"),
+                i18nc("@item:inlistbox", "Rounded"),
+                i18nc("@item:inlistbox", "Circle")
+            ]
+        }
+
+        QQC2.SpinBox {
+            id: albumArtSquircleRoundness
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Squircle roundness:")
+            from: 0
+            to: 50
+            stepSize: 1
+            enabled: replaceMediaPlayerIconWithAlbumArt.checked && albumArtShape.currentIndex === 1
+            textFromValue: value => i18nc("@item:valuesuffix percent", "%1%", value)
+            valueFromText: text => parseInt(text)
+        }
+
+        QQC2.SpinBox {
+            id: albumArtMetadataGap
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Metadata gap:")
+            from: 0
+            to: 32
+            stepSize: 1
+            enabled: replaceMediaPlayerIconWithAlbumArt.checked
+            textFromValue: value => i18nc("@item:valuesuffix pixels", "%1 px", value)
+            valueFromText: text => parseInt(text)
         }
 
         QQC2.ScrollView {

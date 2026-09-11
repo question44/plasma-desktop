@@ -24,10 +24,12 @@ Item {
     }
 
     readonly property real indicatorScale: 1.2
+    readonly property string visibilityMode: ["always", "hover", "muted-hover"][
+        Math.max(0, Math.min(2, task.audioStreamIndicatorVisibility))]
     readonly property bool taskHovered: task.containsMouse || hoverHandler.hovered
-    readonly property bool shouldShow: task.audioStreamIndicatorVisibility === 0
-        || (task.audioStreamIndicatorVisibility === 1 && taskHovered)
-        || (task.audioStreamIndicatorVisibility === 2 && (task.muted || taskHovered))
+    readonly property bool shouldShow: visibilityMode === "always"
+        || (visibilityMode === "hover" && taskHovered)
+        || (visibilityMode === "muted-hover" && (task.muted || taskHovered))
 
     activeFocusOnTab: true
 
@@ -60,7 +62,7 @@ Item {
                  // Delay showing the play indicator so we don't flash it for brief sounds.
                  PauseAnimation {
                     duration: !task.delayAudioStreamIndicator || inPopup
-                        || !task.playingAudio || task.audioStreamIndicatorVisibility !== 0 ? 0 : 2000
+                        || !task.playingAudio || visibilityMode !== "always" ? 0 : 2000
                  }
                  NumberAnimation {
                      property: "opacity"

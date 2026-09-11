@@ -296,6 +296,22 @@
       <label>Whether to show a small application icon over replacement album art.</label>
       <default>true</default>
     </entry>
+    <entry name="albumArtPadding" type="Int">
+      <label>Inset padding around replacement album art in pixels.</label>
+      <default>0</default>
+    </entry>
+    <entry name="albumArtShape" type="Int">
+      <label>Corner treatment for replacement album art.</label>
+      <default>0</default>
+    </entry>
+    <entry name="albumArtSquircleRoundness" type="Int">
+      <label>Corner roundness of squircle replacement album art in percent.</label>
+      <default>36</default>
+    </entry>
+    <entry name="albumArtMetadataGap" type="Int">
+      <label>Spacing between replacement album art and media metadata in pixels.</label>
+      <default>4</default>
+    </entry>
     <entry name="albumArtExcludedAppIds" type="String">
       <label>Task desktop IDs excluded from album-art icon replacement, one per line.</label>
       <default></default>

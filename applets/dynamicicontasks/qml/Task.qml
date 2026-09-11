@@ -130,8 +130,12 @@ PlasmaCore.ToolTipArea {
         : 0
     readonly property bool mediaControlsAvailable: expandedMediaTask
         && (mediaPlayerData?.canControl ?? false)
-    readonly property bool mediaControlsAlwaysVisible: Plasmoid.configuration.wideMediaControlsMode === 0
-    readonly property bool mediaControlsBlendIntoTask: Plasmoid.configuration.wideMediaControlsBackgroundStyle === 1
+    readonly property string mediaControlsVisibilityMode: ["always", "hover"][
+        Math.max(0, Math.min(1, Plasmoid.configuration.wideMediaControlsMode))]
+    readonly property bool mediaControlsAlwaysVisible: mediaControlsVisibilityMode === "always"
+    readonly property string mediaControlsBackgroundMode: ["solid", "diffuse"][
+        Math.max(0, Math.min(1, Plasmoid.configuration.wideMediaControlsBackgroundStyle))]
+    readonly property bool mediaControlsBlendIntoTask: mediaControlsBackgroundMode === "diffuse"
     readonly property real mediaControlsButtonSize: Kirigami.Units.iconSizes.smallMedium
     readonly property real mediaControlsHorizontalPadding: Kirigami.Units.smallSpacing * 1.5
     readonly property real mediaControlsWidth: (mediaControlsButtonSize * 3)
@@ -167,10 +171,10 @@ PlasmaCore.ToolTipArea {
         const estimatedTextWidth = displayedCharacterCount * Kirigami.Units.gridUnit * 0.42;
         const textWidth = Math.max(measuredTextWidth, estimatedTextWidth);
         // Match the metadata item's anchors: the cover starts after the left
-        // frame margin, text starts after one label margin, and ends before the
+        // frame margin, text starts after the configured art/metadata gap, and ends before the
         // right frame margin. The title metric is bold as the visible label is.
         const desired = taskFrame.margins.left + coverWidth
-            + TaskManagerApplet.LayoutMetrics.labelMargin + textWidth
+            + mediaAlbumArtMetadataGap + textWidth
             + mediaControlsReservation + mediaAudioIndicatorReservation + taskFrame.margins.right;
         return Math.min(
             Math.max(minimum, Plasmoid.configuration.mediaPlayerTaskMaxWidth),
@@ -198,6 +202,27 @@ PlasmaCore.ToolTipArea {
         && !mediaPresentationExcluded
     readonly property bool mediaAlbumArtEnabled: mediaAlbumArtEligible
         && String(mediaPlayerData?.artUrl ?? "").length > 0
+    readonly property string albumArtShapeName: ["square", "squircle", "rounded", "circle"][
+        Math.max(0, Math.min(3, Plasmoid.configuration.albumArtShape))]
+    readonly property real albumArtPadding: mediaAlbumArtEnabled
+        ? Plasmoid.configuration.albumArtPadding
+        : 0
+    readonly property real mediaAlbumArtMetadataGap: mediaAlbumArtEligible
+        ? Plasmoid.configuration.albumArtMetadataGap
+        : TaskManagerApplet.LayoutMetrics.labelMargin
+    readonly property real albumArtCornerRadius: {
+        const size = Math.min(albumArtViewport.width, albumArtViewport.height);
+        if (albumArtShapeName === "squircle") {
+            return size * (Plasmoid.configuration.albumArtSquircleRoundness / 100);
+        }
+        if (albumArtShapeName === "rounded") {
+            return size * 0.16;
+        }
+        if (albumArtShapeName === "circle") {
+            return size / 2;
+        }
+        return 0;
+    }
     readonly property bool mediaProgressVisible: Plasmoid.configuration.showMediaProgress
         && !inPopup
         && !model.IsGroupParent
@@ -206,8 +231,10 @@ PlasmaCore.ToolTipArea {
     readonly property real mediaProgress: mediaProgressVisible
         ? Math.max(0, Math.min(1, mediaPlayerData.position / mediaPlayerData.length))
         : 0
+    readonly property string mediaPlayerColorSourceName: ["icon", "album"][
+        Math.max(0, Math.min(1, Plasmoid.configuration.mediaPlayerColorSource))]
     readonly property bool mediaAlbumArtColorAvailable:
-        Plasmoid.configuration.mediaPlayerColorSource === 1
+        mediaPlayerColorSourceName === "album"
         && !mediaPresentationExcluded
         && String(mediaPlayerData?.artUrl ?? "").length > 0
         && albumArtColors.palette.length > 0
@@ -986,57 +1013,96 @@ PlasmaCore.ToolTipArea {
             source: task.model.decoration
         }
 
-        Image {
-            id: albumArtFirst
+        Item {
+            id: albumArtViewport
 
-            anchors.fill: parent
-            asynchronous: true
-            cache: true
-            fillMode: Image.PreserveAspectCrop
-            sourceSize.width: width
-            sourceSize.height: height
-            opacity: 0
+            anchors.centerIn: parent
+            width: Math.max(0, (task.albumArtShapeName === "circle"
+                ? Math.min(parent.width, parent.height)
+                : parent.width) - (task.albumArtPadding * 2))
+            height: Math.max(0, (task.albumArtShapeName === "circle"
+                ? Math.min(parent.width, parent.height)
+                : parent.height) - (task.albumArtPadding * 2))
 
-            onStatusChanged: {
-                if (status === Image.Ready) {
-                    iconBox.commitAlbumArt(true, source);
-                } else if (status === Image.Error) {
-                    iconBox.albumArtLoadFailed(source);
+            Rectangle {
+                id: albumArtMask
+
+                anchors.fill: parent
+                visible: false
+                radius: task.albumArtCornerRadius
+                color: "white"
+            }
+
+            Image {
+                id: albumArtFirst
+
+                anchors.fill: parent
+                visible: false
+                asynchronous: true
+                cache: true
+                fillMode: Image.PreserveAspectCrop
+                sourceSize.width: width
+                sourceSize.height: height
+                opacity: 0
+
+                onStatusChanged: {
+                    if (status === Image.Ready) {
+                        iconBox.commitAlbumArt(true, source);
+                    } else if (status === Image.Error) {
+                        iconBox.albumArtLoadFailed(source);
+                    }
+                }
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 180
+                        easing.type: Easing.InOutQuad
+                    }
                 }
             }
 
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 180
-                    easing.type: Easing.InOutQuad
+            Image {
+                id: albumArtSecond
+
+                anchors.fill: parent
+                visible: false
+                asynchronous: true
+                cache: true
+                fillMode: Image.PreserveAspectCrop
+                sourceSize.width: width
+                sourceSize.height: height
+                opacity: 0
+
+                onStatusChanged: {
+                    if (status === Image.Ready) {
+                        iconBox.commitAlbumArt(false, source);
+                    } else if (status === Image.Error) {
+                        iconBox.albumArtLoadFailed(source);
+                    }
+                }
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 180
+                        easing.type: Easing.InOutQuad
+                    }
                 }
             }
-        }
 
-        Image {
-            id: albumArtSecond
-
-            anchors.fill: parent
-            asynchronous: true
-            cache: true
-            fillMode: Image.PreserveAspectCrop
-            sourceSize.width: width
-            sourceSize.height: height
-            opacity: 0
-
-            onStatusChanged: {
-                if (status === Image.Ready) {
-                    iconBox.commitAlbumArt(false, source);
-                } else if (status === Image.Error) {
-                    iconBox.albumArtLoadFailed(source);
-                }
+            GE.OpacityMask {
+                anchors.fill: parent
+                source: albumArtFirst
+                maskSource: albumArtMask
+                visible: albumArtFirst.opacity > 0
+                opacity: albumArtFirst.opacity
             }
 
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 180
-                    easing.type: Easing.InOutQuad
-                }
+            GE.OpacityMask {
+                anchors.fill: parent
+                source: albumArtSecond
+                maskSource: albumArtMask
+                visible: albumArtSecond.opacity > 0
+                opacity: albumArtSecond.opacity
             }
         }
 
@@ -1070,8 +1136,8 @@ PlasmaCore.ToolTipArea {
                 && Plasmoid.configuration.showAppIconOnAlbumArt
             width: Math.max(10, Math.round(Math.min(iconBox.width, iconBox.height) * 0.42))
             height: width
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
+            anchors.right: albumArtViewport.right
+            anchors.bottom: albumArtViewport.bottom
             radius: width / 2
             color: Kirigami.Theme.backgroundColor
             border.width: 1
@@ -1126,7 +1192,7 @@ PlasmaCore.ToolTipArea {
         z: 1
         anchors {
             left: iconBox.right
-            leftMargin: TaskManagerApplet.LayoutMetrics.labelMargin
+            leftMargin: task.mediaAlbumArtMetadataGap
             right: parent.right
             rightMargin: taskFrame.margins.right + task.mediaControlsReservation
                 + task.mediaAudioIndicatorReservation
