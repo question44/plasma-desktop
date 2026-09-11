@@ -130,6 +130,10 @@
       <label>Whether to show media and volume controls in the tooltip.</label>
       <default>true</default>
     </entry>
+    <entry name="mediaPlayerIdAliases" type="String">
+      <label>Task desktop ID to MPRIS DesktopEntry aliases, one mapping per line.</label>
+      <default>com.spotify.Client=spotify</default>
+    </entry>
     <entry name="fill" type="Bool">
       <label>Whether task manager should occupy all available space.</label>
       <default>true</default>
@@ -235,6 +239,22 @@
     <entry name="animateRunningIndicators" type="Bool">
       <label>Whether changes to segmented running-task indicators are animated.</label>
       <default>true</default>
+    </entry>
+    <entry name="showMediaProgress" type="Bool">
+      <label>Whether a single-window media player's running indicator shows playback progress.</label>
+      <default>true</default>
+    </entry>
+    <entry name="replaceMediaPlayerIconWithAlbumArt" type="Bool">
+      <label>Whether to replace a matched media player's task icon with album art when available.</label>
+      <default>false</default>
+    </entry>
+    <entry name="showAppIconOnAlbumArt" type="Bool">
+      <label>Whether to show a small application icon over replacement album art.</label>
+      <default>true</default>
+    </entry>
+    <entry name="albumArtExcludedAppIds" type="String">
+      <label>Task desktop IDs excluded from album-art icon replacement, one per line.</label>
+      <default></default>
     </entry>
   </group>
 

@@ -11,6 +11,17 @@ the stock task model and interactions, while adding:
   automatically when required to keep every marker inside the task button;
 - configurable shared opacity for inactive task edges and inactive-window
   markers in both segmented modes;
+- optional MPRIS playback progress in the existing edge indicator for
+  single-window media players, with a dimmed frozen fill while paused;
+- shared, configurable task-desktop-ID to MPRIS-ID aliases used by media
+  progress, tooltip controls, context-menu actions, and mouse media actions;
+- optional album-art task icons with automatic application-icon fallback and
+  an optional shadowed application-icon corner badge, plus a per-application exclusion
+  list editable from Media settings or each matched player's context menu;
+- buffered album-art changes that retain the previous cover while the next one
+  loads, then cross-fade between them without flashing the application icon;
+- a dedicated Media settings tab for playback controls, progress, album art,
+  exclusions, and task-to-MPRIS ID mappings;
 - optional animations for segment emphasis, position, size, shape, and entry;
 - the stock group-expander badge is shown only in Plasma-standard mode;
 - linked or independently configurable background corner radii;

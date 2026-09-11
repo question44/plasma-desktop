@@ -155,7 +155,12 @@ PlasmaExtras.Menu {
         });
 
         // Add Media Player control actions
-        const playerData = mpris2Source.playerForLauncherUrl(launcherUrl, get(TaskManager.AbstractTasksModel.AppPid));
+        const playerData = TaskManagerApplet.TaskTools.mediaPlayerForTask(
+            mpris2Source,
+            launcherUrl,
+            get(TaskManager.AbstractTasksModel.AppPid),
+            get(TaskManager.AbstractTasksModel.AppId),
+            Plasmoid.configuration.mediaPlayerIdAliases);
 
         if (playerData && playerData.canControl && !(get(TaskManager.AbstractTasksModel.WinIdList) !== undefined && get(TaskManager.AbstractTasksModel.WinIdList).length > 1)) {
             const playing = playerData.playbackStatus === Mpris.PlaybackStatus.Playing;
@@ -212,6 +217,28 @@ PlasmaExtras.Menu {
                 playerData.Stop();
             });
             menu.addMenuItem(menuItem, startNewInstanceItem);
+
+            if (Plasmoid.configuration.replaceMediaPlayerIconWithAlbumArt) {
+                const appId = get(TaskManager.AbstractTasksModel.AppId);
+                const currentlyExcluded = TaskManagerApplet.TaskTools.desktopIdListContains(
+                    Plasmoid.configuration.albumArtExcludedAppIds,
+                    launcherUrl,
+                    appId);
+                menuItem = menu.newMenuItem(menu);
+                menuItem.text = i18nc("@option:check inmenu", "Use Album Art as Task Icon");
+                menuItem.icon = "view-media-album-cover";
+                menuItem.checkable = true;
+                menuItem.checked = !currentlyExcluded;
+                menuItem.clicked.connect(() => {
+                    Plasmoid.configuration.albumArtExcludedAppIds =
+                        TaskManagerApplet.TaskTools.setDesktopIdListExcluded(
+                            Plasmoid.configuration.albumArtExcludedAppIds,
+                            launcherUrl,
+                            appId,
+                            !currentlyExcluded);
+                });
+                menu.addMenuItem(menuItem, startNewInstanceItem);
+            }
 
             // Technically media controls and audio streams are separate but for the user they're
             // semantically related, don't add a separator in between.

@@ -17,6 +17,7 @@ import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.plasma.private.mpris as Mpris
 import org.kde.kirigami as Kirigami
+import plasma.applet.org.janzon.plasma.dynamicicontasks as TaskManagerApplet
 
 import org.kde.plasma.plasmoid
 
@@ -55,7 +56,13 @@ Loader {
     readonly property int tooltipInstanceMaximumWidth: Kirigami.Units.gridUnit * 16
 
     // These properties are required to make tooltip interactive when there is a player but no window is present.
-    readonly property Mpris.PlayerContainer playerData: mpris2Source.playerForLauncherUrl(launcherUrl, pidParent)
+    readonly property Mpris.PlayerContainer playerData: parentTask?.mediaPlayerData
+        ?? TaskManagerApplet.TaskTools.mediaPlayerForTask(
+            mpris2Source,
+            launcherUrl,
+            pidParent,
+            "",
+            Plasmoid.configuration.mediaPlayerIdAliases)
 
     LayoutMirroring.enabled: Application.layoutDirection === Qt.RightToLeft
     LayoutMirroring.childrenInherit: true

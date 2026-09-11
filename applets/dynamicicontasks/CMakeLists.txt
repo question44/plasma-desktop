@@ -37,6 +37,7 @@ plasma_add_applet(org.janzon.plasma.dynamicicontasks
         qml/AudioStream.qml
         qml/ConfigAppearance.qml
         qml/ConfigBehavior.qml
+        qml/ConfigMedia.qml
         qml/config.qml
         qml/ContextMenu.qml
         qml/GroupDialog.qml

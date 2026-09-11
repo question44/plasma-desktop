@@ -13,6 +13,115 @@
 // Can't be `let`, or else QML counterpart won't be able to assign to it.
 var taskManagerInstanceCount = 0;
 
+function normalizedDesktopId(value) {
+    let id = String(value ?? "").trim();
+    if (!id) {
+        return "";
+    }
+
+    const queryIndex = id.indexOf("?");
+    if (queryIndex !== -1) {
+        id = id.substring(0, queryIndex);
+    }
+    const fragmentIndex = id.indexOf("#");
+    if (fragmentIndex !== -1) {
+        id = id.substring(0, fragmentIndex);
+    }
+
+    const slashIndex = Math.max(id.lastIndexOf("/"), id.lastIndexOf("\\"));
+    if (slashIndex !== -1) {
+        id = id.substring(slashIndex + 1);
+    }
+    if (id.startsWith("applications:")) {
+        id = id.substring("applications:".length);
+    }
+    if (id.toLowerCase().endsWith(".desktop")) {
+        id = id.substring(0, id.length - ".desktop".length);
+    }
+
+    try {
+        id = decodeURIComponent(id);
+    } catch (error) {
+        // Keep malformed URL text usable as a literal desktop ID.
+    }
+    return id.trim().toLowerCase();
+}
+
+function desktopIdListContains(configuredIds, launcherUrl, appId) {
+    const taskIds = [normalizedDesktopId(launcherUrl), normalizedDesktopId(appId)]
+        .filter(id => id.length > 0);
+    if (taskIds.length === 0) {
+        return false;
+    }
+
+    const configured = String(configuredIds ?? "").split(/\r?\n/);
+    return configured.some(entry => {
+        const line = entry.trim();
+        return line.length > 0
+            && !line.startsWith("#")
+            && taskIds.includes(normalizedDesktopId(line));
+    });
+}
+
+function setDesktopIdListExcluded(configuredIds, launcherUrl, appId, excluded) {
+    const taskIds = [normalizedDesktopId(launcherUrl), normalizedDesktopId(appId)]
+        .filter(id => id.length > 0);
+    let lines = String(configuredIds ?? "").split(/\r?\n/);
+
+    if (!excluded) {
+        lines = lines.filter(entry => {
+            const line = entry.trim();
+            return !line || line.startsWith("#")
+                || !taskIds.includes(normalizedDesktopId(line));
+        });
+    } else if (!desktopIdListContains(configuredIds, launcherUrl, appId)) {
+        const id = normalizedDesktopId(appId) || normalizedDesktopId(launcherUrl);
+        if (id) {
+            while (lines.length > 0 && !lines[lines.length - 1].trim()) {
+                lines.pop();
+            }
+            lines.push(id);
+        }
+    }
+
+    return lines.join("\n");
+}
+
+function mediaPlayerForTask(mpris2Source, launcherUrl, pid, appId, configuredAliases) {
+    let player = mpris2Source.playerForLauncherUrl(launcherUrl, pid);
+    if (player) {
+        return player;
+    }
+
+    const taskIds = [normalizedDesktopId(launcherUrl), normalizedDesktopId(appId)]
+        .filter(id => id.length > 0);
+    const mappings = String(configuredAliases ?? "").split(/\r?\n/);
+
+    for (const mapping of mappings) {
+        const line = mapping.trim();
+        if (!line || line.startsWith("#")) {
+            continue;
+        }
+
+        const separator = line.indexOf("=");
+        if (separator === -1) {
+            continue;
+        }
+
+        const taskId = normalizedDesktopId(line.substring(0, separator));
+        const mprisId = normalizedDesktopId(line.substring(separator + 1));
+        if (!taskId || !mprisId || !taskIds.includes(taskId)) {
+            continue;
+        }
+
+        player = mpris2Source.playerForLauncherUrl(`applications:${mprisId}.desktop`, pid);
+        if (player) {
+            return player;
+        }
+    }
+    return null;
+}
+
 function activateNextPrevTask(anchor, next, wheelSkipMinimized, wheelEnabled, tasks) {
     // FIXME TODO: Unnecessarily convoluted and costly; optimize.
 

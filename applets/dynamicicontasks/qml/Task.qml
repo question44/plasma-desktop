@@ -15,6 +15,7 @@ import org.kde.ksvg as KSvg
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.components as PlasmaComponents3
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.private.mpris as Mpris
 import plasma.applet.org.janzon.plasma.dynamicicontasks as TaskManagerApplet
 import org.kde.plasma.plasmoid
 
@@ -74,6 +75,50 @@ PlasmaCore.ToolTipArea {
     readonly property bool hasAudioStream: audioStreams.length > 0
     readonly property bool playingAudio: hasAudioStream && audioStreams.some(item => !item.corked)
     readonly property bool muted: hasAudioStream && audioStreams.every(item => item.muted)
+    property Mpris.PlayerContainer mediaPlayerData: null
+    readonly property bool mediaProgressPlaying: mediaPlayerData?.playbackStatus === Mpris.PlaybackStatus.Playing
+    readonly property bool mediaProgressPaused: mediaPlayerData?.playbackStatus === Mpris.PlaybackStatus.Paused
+    readonly property bool mediaAlbumArtEligible: Plasmoid.configuration.replaceMediaPlayerIconWithAlbumArt
+        && !model.IsGroupParent
+        && (mediaProgressPlaying || mediaProgressPaused)
+        && !TaskManagerApplet.TaskTools.desktopIdListContains(
+            Plasmoid.configuration.albumArtExcludedAppIds,
+            model.LauncherUrlWithoutIcon,
+            model.AppId)
+    readonly property bool mediaAlbumArtEnabled: mediaAlbumArtEligible
+        && String(mediaPlayerData?.artUrl ?? "").length > 0
+    readonly property bool mediaProgressVisible: Plasmoid.configuration.showMediaProgress
+        && !inPopup
+        && !model.IsGroupParent
+        && (mediaProgressPlaying || mediaProgressPaused)
+        && (mediaPlayerData?.length ?? 0) > 0
+    readonly property real mediaProgress: mediaProgressVisible
+        ? Math.max(0, Math.min(1, mediaPlayerData.position / mediaPlayerData.length))
+        : 0
+
+    function findMediaPlayer(): Mpris.PlayerContainer {
+        if (model.IsGroupParent) {
+            return null;
+        }
+        return TaskManagerApplet.TaskTools.mediaPlayerForTask(
+            mpris2Source,
+            model.LauncherUrlWithoutIcon,
+            model.AppPid,
+            model.AppId,
+            Plasmoid.configuration.mediaPlayerIdAliases);
+    }
+
+    function refreshMediaPlayer(): void {
+        mediaPlayerData = findMediaPlayer();
+    }
+
+    Timer {
+        interval: 1000
+        repeat: true
+        running: task.mediaProgressVisible && task.mediaProgressPlaying
+        triggeredOnStart: true
+        onTriggered: task.mediaPlayerData?.updatePosition()
+    }
 
     readonly property bool highlighted: (inPopup && activeFocus) || (!inPopup && containsMouse)
         || (task.contextMenu && task.contextMenu.status === PlasmaExtras.Menu.Open)
@@ -232,10 +277,40 @@ PlasmaCore.ToolTipArea {
         tasksRoot.cancelHighlightWindows();
     }
 
-    onPidChanged: updateAudioStreams({delay: false})
+    onPidChanged: {
+        updateAudioStreams({delay: false});
+        refreshMediaPlayer();
+    }
     onAppNameChanged: updateAudioStreams({delay: false})
 
+    Connections {
+        target: Plasmoid.configuration
+
+        function onMediaPlayerIdAliasesChanged(): void {
+            task.refreshMediaPlayer();
+        }
+    }
+
+    Connections {
+        target: mpris2Source
+
+        function onRowsInserted(): void {
+            task.refreshMediaPlayer();
+        }
+
+        function onRowsRemoved(): void {
+            task.refreshMediaPlayer();
+        }
+
+        function onDataChanged(): void {
+            if (!task.mediaPlayerData) {
+                task.refreshMediaPlayer();
+            }
+        }
+    }
+
     onIsWindowChanged: {
+        refreshMediaPlayer();
         if (model.IsWindow) {
             taskInitComponent.createObject(task);
             updateAudioStreams({delay: false});
@@ -466,7 +541,7 @@ PlasmaCore.ToolTipArea {
                     }, modelIndex(), tasksModel);
                 }
             } else if (button === Qt.BackButton || button === Qt.ForwardButton) {
-                const playerData = mpris2Source.playerForLauncherUrl(task.model.LauncherUrlWithoutIcon, task.model.AppPid);
+                const playerData = task.mediaPlayerData;
                 if (playerData) {
                     if (button === Qt.BackButton) {
                         playerData.Previous();
@@ -524,7 +599,7 @@ PlasmaCore.ToolTipArea {
 
             onActiveChanged: {
                 if (active) {
-                    icon.grabToImage(result => {
+                    iconBox.grabToImage(result => {
                         if (!dragHandler.active) {
                             // BUG 466675 grabToImage is async, so avoid updating dragSource when active is false
                             return;
@@ -612,6 +687,11 @@ PlasmaCore.ToolTipArea {
     Loader {
         id: iconBox
 
+        property bool firstAlbumArtLayerActive: true
+        property string desiredAlbumArtUrl: task.mediaAlbumArtEnabled
+            ? String(task.mediaPlayerData.artUrl)
+            : ""
+
         anchors {
             left: parent.left
             leftMargin: adjustMargin(true, parent.width, taskFrame.margins.left)
@@ -627,6 +707,69 @@ PlasmaCore.ToolTipArea {
         active: height >= Kirigami.Units.iconSizes.small
                 && task.smartLauncherItem && task.smartLauncherItem.countVisible
         source: "TaskBadgeOverlay.qml"
+
+        onDesiredAlbumArtUrlChanged: updateAlbumArt(desiredAlbumArtUrl)
+
+        Component.onCompleted: updateAlbumArt(desiredAlbumArtUrl)
+
+        function updateAlbumArt(url) {
+            if (!url) {
+                if (task.mediaAlbumArtEligible) {
+                    // MPRIS players often clear ArtUrl briefly between tracks. Keep
+                    // the old cover while waiting instead of flashing the app icon.
+                    albumArtFallbackTimer.restart();
+                } else {
+                    hideAlbumArt();
+                }
+                return;
+            }
+
+            albumArtFallbackTimer.stop();
+            albumArtCleanupTimer.stop();
+
+            const currentLayer = firstAlbumArtLayerActive ? albumArtFirst : albumArtSecond;
+            if (String(currentLayer.source) === url && currentLayer.status === Image.Ready) {
+                currentLayer.opacity = 1;
+                return;
+            }
+
+            const loadingLayer = firstAlbumArtLayerActive ? albumArtSecond : albumArtFirst;
+            const loadingFirstLayer = !firstAlbumArtLayerActive;
+            loadingLayer.opacity = 0;
+
+            // Going back to a recent track can reuse the cover that is already
+            // ready in the inactive buffer. Reassigning the same source does not
+            // emit statusChanged, so promote it explicitly.
+            if (String(loadingLayer.source) === url && loadingLayer.status === Image.Ready) {
+                commitAlbumArt(loadingFirstLayer, url);
+                return;
+            }
+
+            loadingLayer.source = url;
+        }
+
+        function commitAlbumArt(firstLayer, url) {
+            if (!desiredAlbumArtUrl || String(url) !== desiredAlbumArtUrl) {
+                return;
+            }
+
+            firstAlbumArtLayerActive = firstLayer;
+            albumArtFirst.opacity = firstLayer ? 1 : 0;
+            albumArtSecond.opacity = firstLayer ? 0 : 1;
+        }
+
+        function albumArtLoadFailed(url) {
+            if (String(url) === desiredAlbumArtUrl) {
+                hideAlbumArt();
+            }
+        }
+
+        function hideAlbumArt() {
+            albumArtFallbackTimer.stop();
+            albumArtFirst.opacity = 0;
+            albumArtSecond.opacity = 0;
+            albumArtCleanupTimer.restart();
+        }
 
         function adjustMargin(isVertical: bool, size: real, margin: real): real {
             if (!size) {
@@ -649,8 +792,111 @@ PlasmaCore.ToolTipArea {
 
             active: task.highlighted
             enabled: true
+            visible: true
 
             source: task.model.decoration
+        }
+
+        Image {
+            id: albumArtFirst
+
+            anchors.fill: parent
+            asynchronous: true
+            cache: true
+            fillMode: Image.PreserveAspectCrop
+            sourceSize.width: width
+            sourceSize.height: height
+            opacity: 0
+
+            onStatusChanged: {
+                if (status === Image.Ready) {
+                    iconBox.commitAlbumArt(true, source);
+                } else if (status === Image.Error) {
+                    iconBox.albumArtLoadFailed(source);
+                }
+            }
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 180
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        }
+
+        Image {
+            id: albumArtSecond
+
+            anchors.fill: parent
+            asynchronous: true
+            cache: true
+            fillMode: Image.PreserveAspectCrop
+            sourceSize.width: width
+            sourceSize.height: height
+            opacity: 0
+
+            onStatusChanged: {
+                if (status === Image.Ready) {
+                    iconBox.commitAlbumArt(false, source);
+                } else if (status === Image.Error) {
+                    iconBox.albumArtLoadFailed(source);
+                }
+            }
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 180
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        }
+
+        Timer {
+            id: albumArtFallbackTimer
+
+            interval: 1000
+            onTriggered: {
+                if (!iconBox.desiredAlbumArtUrl) {
+                    iconBox.hideAlbumArt();
+                }
+            }
+        }
+
+        Timer {
+            id: albumArtCleanupTimer
+
+            interval: 230
+            onTriggered: {
+                if (!iconBox.desiredAlbumArtUrl) {
+                    albumArtFirst.source = "";
+                    albumArtSecond.source = "";
+                }
+            }
+        }
+
+        Kirigami.ShadowedRectangle {
+            id: albumArtAppBadge
+
+            visible: (albumArtFirst.opacity > 0 || albumArtSecond.opacity > 0)
+                && Plasmoid.configuration.showAppIconOnAlbumArt
+            width: Math.max(10, Math.round(Math.min(iconBox.width, iconBox.height) * 0.42))
+            height: width
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            radius: width / 2
+            color: Kirigami.Theme.backgroundColor
+            border.width: 1
+            border.color: Kirigami.Theme.textColor
+            shadow.size: Math.max(2, Math.round(width * 0.18))
+            shadow.xOffset: 0
+            shadow.yOffset: Math.max(1, Math.round(width * 0.06))
+            shadow.color: Qt.rgba(0, 0, 0, 0.55)
+
+            Kirigami.Icon {
+                anchors.fill: parent
+                anchors.margins: Math.max(1, Math.round(parent.width * 0.12))
+                source: task.model.decoration
+            }
         }
 
         states: [
@@ -733,6 +979,7 @@ PlasmaCore.ToolTipArea {
         readonly property real edgeInset: Math.max(3, Kirigami.Units.smallSpacing)
         readonly property int windowCount: Math.max(1, task.model.ChildCount || 1)
         readonly property int segmentCount: windowCount
+        readonly property bool showsMediaProgress: task.mediaProgressVisible && segmentCount === 1
         readonly property int activeSegmentIndex: {
             if (!task.model.IsGroupParent) {
                 return task.model.IsActive ? 0 : -1;
@@ -780,9 +1027,8 @@ PlasmaCore.ToolTipArea {
 
         visible: indicatorStyle !== 0 && !task.inPopup && !task.model.IsStartup
             && ((!task.model.IsLauncher) || task.colorHover)
-        opacity: (task.model.IsActive || task.colorHover)
-            ? 1
-            : Plasmoid.configuration.inactiveMarkerOpacity / 100
+        opacity: 1
+        clip: true
 
         width: verticalIndicator
             ? indicatorThickness
@@ -810,12 +1056,20 @@ PlasmaCore.ToolTipArea {
 
                 color: task.taskAccentColor
                 opacity: {
-                    if (!task.model.IsGroupParent || runningIndicator.activeSegmentIndex < 0) {
-                        return 1;
+                    if (runningIndicator.showsMediaProgress) {
+                        return 0.28;
                     }
-                    return index === runningIndicator.activeSegmentIndex
+
+                    const taskOpacity = (task.model.IsActive || task.colorHover)
                         ? 1
                         : Plasmoid.configuration.inactiveMarkerOpacity / 100;
+                    if (!task.model.IsGroupParent || runningIndicator.activeSegmentIndex < 0) {
+                        return taskOpacity;
+                    }
+                    const segmentOpacity = index === runningIndicator.activeSegmentIndex
+                        ? 1
+                        : Plasmoid.configuration.inactiveMarkerOpacity / 100;
+                    return taskOpacity * segmentOpacity;
                 }
                 radius: runningIndicator.indicatorStyle === 2
                     && runningIndicator.activeSegmentIndex >= 0
@@ -869,6 +1123,36 @@ PlasmaCore.ToolTipArea {
                 }
             }
         }
+
+        Rectangle {
+            visible: runningIndicator.showsMediaProgress
+            color: task.taskAccentColor
+            opacity: task.mediaProgressPlaying ? 1 : 0.6
+            radius: runningIndicator.indicatorThickness / 2
+
+            width: runningIndicator.verticalIndicator
+                ? runningIndicator.width
+                : runningIndicator.width * task.mediaProgress
+            height: runningIndicator.verticalIndicator
+                ? runningIndicator.height * task.mediaProgress
+                : runningIndicator.height
+            x: 0
+            y: runningIndicator.verticalIndicator
+                ? runningIndicator.height - height
+                : 0
+
+            Behavior on width {
+                enabled: task.mediaProgressPlaying
+                NumberAnimation { duration: 1000; easing.type: Easing.Linear }
+            }
+            Behavior on height {
+                enabled: task.mediaProgressPlaying
+                NumberAnimation { duration: 1000; easing.type: Easing.Linear }
+            }
+            Behavior on opacity {
+                NumberAnimation { duration: Kirigami.Units.shortDuration }
+            }
+        }
     }
 
     GroupExpanderOverlay {
@@ -912,6 +1196,8 @@ PlasmaCore.ToolTipArea {
     ]
 
     Component.onCompleted: {
+        refreshMediaPlayer();
+
         if (!inPopup && model.IsWindow) {
             updateAudioStreams({delay: false});
         }

@@ -15,6 +15,11 @@ ConfigModel {
          source: "ConfigAppearance.qml"
     }
     ConfigCategory {
+         name: i18nc("@title:group for configuration dialog page", "Media")
+         icon: "applications-multimedia"
+         source: "ConfigMedia.qml"
+    }
+    ConfigCategory {
          name: i18nc("@title:group for configuration dialog page", "Behavior")
          icon: "preferences-desktop"
          source: "ConfigBehavior.qml"
