@@ -244,6 +244,18 @@
       <label>Whether a single-window media player's running indicator shows playback progress.</label>
       <default>true</default>
     </entry>
+    <entry name="expandMediaPlayerTasks" type="Bool">
+      <label>Whether playing or paused media-player tasks use a wider layout on horizontal panels.</label>
+      <default>false</default>
+    </entry>
+    <entry name="mediaPlayerTaskMinWidth" type="Int">
+      <label>Minimum width of an expanded media-player task in pixels.</label>
+      <default>180</default>
+    </entry>
+    <entry name="mediaPlayerTaskMaxWidth" type="Int">
+      <label>Maximum width of an expanded media-player task in pixels.</label>
+      <default>360</default>
+    </entry>
     <entry name="replaceMediaPlayerIconWithAlbumArt" type="Bool">
       <label>Whether to replace a matched media player's task icon with album art when available.</label>
       <default>false</default>

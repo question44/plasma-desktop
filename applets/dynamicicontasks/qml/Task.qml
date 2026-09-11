@@ -39,13 +39,29 @@ PlasmaCore.ToolTipArea {
                              TaskManagerApplet.LayoutMetrics.preferredMinHeight()))
     implicitWidth: tasksRoot.vertical
         ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Math.min(TaskManagerApplet.LayoutMetrics.preferredMaxWidth(), tasksRoot.width / Plasmoid.configuration.maxStripes))
-        : 0
+        : (expandedMediaTask
+            ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Plasmoid.configuration.mediaPlayerTaskMinWidth)
+            : 0)
 
-    Layout.fillWidth: true
+    // A wide media task has an explicit content-driven preferred width. Letting
+    // it fill its grid cell makes spare panel space push it straight to the
+    // configured maximum instead of resting near that preferred size.
+    Layout.fillWidth: !expandedMediaTask
     Layout.fillHeight: !inPopup
+    Layout.minimumWidth: expandedMediaTask
+        ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Plasmoid.configuration.mediaPlayerTaskMinWidth)
+        : -1
+    Layout.preferredWidth: expandedMediaTask
+        ? Math.max(TaskManagerApplet.LayoutMetrics.preferredMinWidth(), Plasmoid.configuration.mediaPlayerTaskMinWidth)
+        : -1
     Layout.maximumWidth: tasksRoot.vertical
         ? -1
-        : ((model.IsLauncher && !tasksRoot.iconsOnly) ? tasksRoot.height / taskList.rows : TaskManagerApplet.LayoutMetrics.preferredMaxWidth())
+        : (expandedMediaTask
+            ? Math.max(
+                TaskManagerApplet.LayoutMetrics.preferredMaxWidth(),
+                Plasmoid.configuration.mediaPlayerTaskMinWidth,
+                Plasmoid.configuration.mediaPlayerTaskMaxWidth)
+            : ((model.IsLauncher && !tasksRoot.iconsOnly) ? tasksRoot.height / taskList.rows : TaskManagerApplet.LayoutMetrics.preferredMaxWidth()))
     Layout.maximumHeight: tasksRoot.vertical ? TaskManagerApplet.LayoutMetrics.preferredMaxHeight() : -1
 
     required property var model
@@ -78,13 +94,21 @@ PlasmaCore.ToolTipArea {
     property Mpris.PlayerContainer mediaPlayerData: null
     readonly property bool mediaProgressPlaying: mediaPlayerData?.playbackStatus === Mpris.PlaybackStatus.Playing
     readonly property bool mediaProgressPaused: mediaPlayerData?.playbackStatus === Mpris.PlaybackStatus.Paused
+    readonly property bool mediaPresentationExcluded: TaskManagerApplet.TaskTools.desktopIdListContains(
+        Plasmoid.configuration.albumArtExcludedAppIds,
+        model.LauncherUrlWithoutIcon,
+        model.AppId)
+    readonly property bool mediaTaskExpansionCandidate: Plasmoid.configuration.expandMediaPlayerTasks
+        && !tasksRoot.vertical
+        && !inPopup
+        && !model.IsGroupParent
+        && !mediaPresentationExcluded
+        && (mediaProgressPlaying || mediaProgressPaused)
+    readonly property bool expandedMediaTask: mediaTaskExpansionCandidate
     readonly property bool mediaAlbumArtEligible: Plasmoid.configuration.replaceMediaPlayerIconWithAlbumArt
         && !model.IsGroupParent
         && (mediaProgressPlaying || mediaProgressPaused)
-        && !TaskManagerApplet.TaskTools.desktopIdListContains(
-            Plasmoid.configuration.albumArtExcludedAppIds,
-            model.LauncherUrlWithoutIcon,
-            model.AppId)
+        && !mediaPresentationExcluded
     readonly property bool mediaAlbumArtEnabled: mediaAlbumArtEligible
         && String(mediaPlayerData?.artUrl ?? "").length > 0
     readonly property bool mediaProgressVisible: Plasmoid.configuration.showMediaProgress
@@ -904,7 +928,7 @@ PlasmaCore.ToolTipArea {
             // the text label margin, which derives from the icon width.
             State {
                 name: "standalone"
-                when: !label.visible && task.parent
+                when: !label.visible && !task.expandedMediaTask && task.parent
 
                 AnchorChanges {
                     target: iconBox

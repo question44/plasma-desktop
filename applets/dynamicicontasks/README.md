@@ -20,6 +20,11 @@ the stock task model and interactions, while adding:
   list editable from Media settings or each matched player's context menu;
 - buffered album-art changes that retain the previous cover while the next one
   loads, then cross-fade between them without flashing the application icon;
+- optional wider playing/paused media tasks on horizontal panels, with a
+  configurable responsive minimum/maximum width while non-media and
+  album-art-excluded tasks remain icon-only; wide tasks prefer their minimum
+  width without absorbing spare panel space and use the maximum only as a
+  content-growth ceiling;
 - a dedicated Media settings tab for playback controls, progress, album art,
   exclusions, and task-to-MPRIS ID mappings;
 - optional animations for segment emphasis, position, size, shape, and entry;

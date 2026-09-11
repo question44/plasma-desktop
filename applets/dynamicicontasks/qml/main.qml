@@ -33,7 +33,6 @@ PlasmoidItem {
     readonly property bool shouldShrinkToZero: tasksModel.count === 0
     readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property bool iconsOnly: true
-
     property Task toolTipOpenedByClick
     property Task toolTipAreaItem
 
@@ -75,7 +74,7 @@ PlasmoidItem {
         if (vertical) {
             return Kirigami.Units.gridUnit * 10;
         }
-        return taskList.Layout.maximumWidth
+        return taskList.Layout.preferredWidth
     }
     Layout.preferredHeight: {
         if (shouldShrinkToZero) {
@@ -450,6 +449,19 @@ PlasmoidItem {
                         }, 0);
                     return Math.round(totalMaxWidth / widthOccupation);
                 }
+                Layout.preferredWidth: {
+                    const totalPreferredWidth = children.reduce((accumulator, child) => {
+                            const preferredWidth = child.Layout.preferredWidth;
+                            if (isFinite(preferredWidth) && preferredWidth > 0) {
+                                return accumulator + preferredWidth;
+                            }
+                            if (isFinite(child.Layout.maximumWidth)) {
+                                return accumulator + child.Layout.maximumWidth;
+                            }
+                            return accumulator;
+                        }, 0);
+                    return Math.round(totalPreferredWidth / widthOccupation);
+                }
                 Layout.maximumHeight: {
                     const totalMaxHeight = children.reduce((accumulator, child) => {
                             if (!isFinite(child.Layout.maximumHeight)) {
@@ -466,7 +478,7 @@ PlasmoidItem {
                     if (tasks.vertical) {
                         return tasks.width * Math.min(1, widthOccupation);
                     } else {
-                        return Math.min(tasks.width, Layout.maximumWidth);
+                        return Math.min(tasks.width, Layout.preferredWidth);
                     }
                 }
                 height: {

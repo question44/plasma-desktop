@@ -18,6 +18,9 @@ KCMUtils.SimpleKCM {
     property bool cfg_interactiveMute
     property alias cfg_tooltipControls: tooltipControls.checked
     property alias cfg_showMediaProgress: showMediaProgress.checked
+    property alias cfg_expandMediaPlayerTasks: expandMediaPlayerTasks.checked
+    property alias cfg_mediaPlayerTaskMinWidth: mediaPlayerTaskMinWidth.value
+    property alias cfg_mediaPlayerTaskMaxWidth: mediaPlayerTaskMaxWidth.value
     property alias cfg_replaceMediaPlayerIconWithAlbumArt: replaceMediaPlayerIconWithAlbumArt.checked
     property alias cfg_showAppIconOnAlbumArt: showAppIconOnAlbumArt.checked
     property alias cfg_albumArtExcludedAppIds: albumArtExcludedAppIds.text
@@ -66,6 +69,51 @@ KCMUtils.SimpleKCM {
             text: i18nc("@option:check", "Show playback progress in the edge indicator")
         }
 
+        QQC2.CheckBox {
+            id: expandMediaPlayerTasks
+            text: i18nc("@option:check", "Use a wide task for playing and paused media players")
+        }
+
+        QQC2.SpinBox {
+            id: mediaPlayerTaskMinWidth
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Minimum width:")
+            from: 100
+            to: 600
+            stepSize: 10
+            enabled: expandMediaPlayerTasks.checked
+            textFromValue: value => i18nc("@item:valuesuffix pixels", "%1 px", value)
+            valueFromText: text => parseInt(text)
+            onValueModified: {
+                if (value > mediaPlayerTaskMaxWidth.value) {
+                    mediaPlayerTaskMaxWidth.value = value;
+                }
+            }
+        }
+
+        QQC2.SpinBox {
+            id: mediaPlayerTaskMaxWidth
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Maximum width:")
+            from: 100
+            to: 600
+            stepSize: 10
+            enabled: expandMediaPlayerTasks.checked
+            textFromValue: value => i18nc("@item:valuesuffix pixels", "%1 px", value)
+            valueFromText: text => parseInt(text)
+            onValueModified: {
+                if (value < mediaPlayerTaskMinWidth.value) {
+                    mediaPlayerTaskMinWidth.value = value;
+                }
+            }
+        }
+
+        QQC2.Label {
+            Kirigami.FormData.label: ""
+            Layout.fillWidth: true
+            text: i18nc("@info", "The task rests at the minimum width; the maximum limits later content-driven growth. Horizontal panels only.")
+            wrapMode: Text.Wrap
+            color: Kirigami.Theme.disabledTextColor
+        }
+
         Item {
             Kirigami.FormData.isSection: true
         }
@@ -100,7 +148,7 @@ KCMUtils.SimpleKCM {
                 id: albumArtExcludedAppIds
                 placeholderText: i18nc("@info:placeholder", "application.desktop.id")
                 wrapMode: TextEdit.NoWrap
-                Accessible.description: i18nc("@info:whatsthis", "Enter one task desktop ID per line. Album art will not replace icons for these applications. Lines beginning with # are ignored.")
+                Accessible.description: i18nc("@info:whatsthis", "Enter one task desktop ID per line. These applications retain their normal icon-only task and will not use album art. Lines beginning with # are ignored.")
             }
         }
 
@@ -110,7 +158,7 @@ KCMUtils.SimpleKCM {
 
             QQC2.Label {
                 Layout.fillWidth: true
-                text: i18nc("@info", "One desktop ID per line, for example: com.spotify.Client")
+                text: i18nc("@info", "Excluded applications keep a normal icon-only task. One desktop ID per line, for example: com.spotify.Client")
                 wrapMode: Text.Wrap
                 color: Kirigami.Theme.disabledTextColor
             }
