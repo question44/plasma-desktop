@@ -284,6 +284,10 @@
       <label>Visibility mode for media controls in wide media-player tasks.</label>
       <default>1</default>
     </entry>
+    <entry name="wideMediaControlsHoverDelay" type="Int">
+      <label>Delay before wide media controls appear on hover in milliseconds.</label>
+      <default>150</default>
+    </entry>
     <entry name="showWideMediaPrevious" type="Bool">
       <label>Whether wide media-player tasks show a previous-track button.</label>
       <default>true</default>

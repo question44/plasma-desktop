@@ -124,7 +124,9 @@ PlasmaCore.ToolTipArea {
         mediaTrackMeasure.implicitWidth, mediaTrackEstimatedWidth)
     readonly property real mediaInlineMarqueeWidth: Math.max(
         mediaInlineMeasure.implicitWidth, mediaInlineEstimatedWidth)
-    readonly property real mediaAudioIndicatorReservation: audioStreamIcon !== null && audioStreamIcon.visible
+    // Keep the speaker/mute slot reserved for media tasks even while its
+    // indicator is hidden, so hovering cannot change the task's preferred width.
+    readonly property real mediaAudioIndicatorReservation: audioStreamIcon !== null
         ? Kirigami.Units.iconSizes.roundedIconSize(Math.min(height, Kirigami.Units.iconSizes.smallMedium))
             + TaskManagerApplet.LayoutMetrics.labelMargin
         : 0
@@ -134,6 +136,7 @@ PlasmaCore.ToolTipArea {
     readonly property string mediaControlsVisibilityMode: ["always", "hover"][
         Math.max(0, Math.min(1, Plasmoid.configuration.wideMediaControlsMode))]
     readonly property bool mediaControlsAlwaysVisible: mediaControlsVisibilityMode === "always"
+    property bool mediaControlsHoverReady: false
     readonly property string mediaControlsBackgroundMode: ["solid", "diffuse"][
         Math.max(0, Math.min(1, Plasmoid.configuration.wideMediaControlsBackgroundStyle))]
     readonly property bool mediaControlsBlendIntoTask: mediaControlsBackgroundMode === "diffuse"
@@ -311,6 +314,13 @@ PlasmaCore.ToolTipArea {
         onTriggered: task.restartMetadataMarquee()
     }
 
+    Timer {
+        id: mediaControlsHoverDelayTimer
+        interval: Math.max(0, Plasmoid.configuration.wideMediaControlsHoverDelay)
+        repeat: false
+        onTriggered: task.mediaControlsHoverReady = true
+    }
+
     readonly property bool highlighted: (inPopup && activeFocus) || (!inPopup && (containsMouse || mediaTaskControlsHover.hovered))
         || (task.contextMenu && task.contextMenu.status === PlasmaExtras.Menu.Open)
         || (!!tasksRoot.groupDialog && tasksRoot.groupDialog.visualParent === task)
@@ -460,9 +470,15 @@ PlasmaCore.ToolTipArea {
 
     onContainsMouseChanged: {
         if (containsMouse) {
+            task.mediaControlsHoverReady = false;
+            if (!task.mediaControlsAlwaysVisible) {
+                mediaControlsHoverDelayTimer.start();
+            }
             task.forceActiveFocus(Qt.MouseFocusReason);
             task.updateMainItemBindings();
         } else {
+            mediaControlsHoverDelayTimer.stop();
+            task.mediaControlsHoverReady = false;
             tasksRoot.toolTipOpenedByClick = null;
         }
     }
@@ -1634,7 +1650,7 @@ PlasmaCore.ToolTipArea {
         z: 2
         width: task.mediaControlsWidth
         height: task.mediaControlsButtonSize
-        opacity: task.mediaControlsAlwaysVisible || task.containsMouse || mediaTaskControlsHover.hovered ? 1 : 0
+        opacity: task.mediaControlsAlwaysVisible || task.mediaControlsHoverReady ? 1 : 0
         anchors {
             right: parent.right
             rightMargin: taskFrame.margins.right + task.mediaAudioIndicatorReservation

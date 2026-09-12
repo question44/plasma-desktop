@@ -28,6 +28,7 @@ KCMUtils.SimpleKCM {
     property bool cfg_scrollMediaMetadata
     property int cfg_mediaMetadataScrollMode
     property alias cfg_wideMediaControlsMode: wideMediaControlsMode.currentIndex
+    property alias cfg_wideMediaControlsHoverDelay: wideMediaControlsHoverDelay.value
     property alias cfg_showWideMediaPrevious: showWideMediaPrevious.checked
     property alias cfg_showWideMediaPlayPause: showWideMediaPlayPause.checked
     property alias cfg_showWideMediaNext: showWideMediaNext.checked
@@ -206,6 +207,17 @@ KCMUtils.SimpleKCM {
                 i18nc("@item:inlistbox", "Always show"),
                 i18nc("@item:inlistbox", "Show on hover")
             ]
+        }
+
+        QQC2.SpinBox {
+            id: wideMediaControlsHoverDelay
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Hover delay:")
+            from: 0
+            to: 1000
+            stepSize: 25
+            enabled: expandMediaPlayerTasks.checked && wideMediaControlsMode.currentIndex === 1
+            textFromValue: value => i18nc("@item:valuesuffix milliseconds", "%1 ms", value)
+            valueFromText: text => parseInt(text)
         }
 
         GridLayout {

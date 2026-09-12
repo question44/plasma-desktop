@@ -41,6 +41,7 @@ the stock task model and interactions, while adding:
 - an optional Cava-backed audio visualizer rendered as colored bars beneath
   wide media metadata, with configurable maximum height, opacity, sensitivity,
   and bar width;
+- configurable delay before hover-only panel media controls appear;
 - optional animations for segment emphasis, position, size, shape, and entry;
 - the stock group-expander badge is shown only in Plasma-standard mode;
 - linked or independently configurable background corner radii;
