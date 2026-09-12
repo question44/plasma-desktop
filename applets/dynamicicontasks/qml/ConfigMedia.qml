@@ -40,6 +40,7 @@ KCMUtils.SimpleKCM {
     property alias cfg_showAppIconOnAlbumArt: showAppIconOnAlbumArt.checked
     property alias cfg_albumArtPadding: albumArtPadding.value
     property alias cfg_albumArtShape: albumArtShape.currentIndex
+    property alias cfg_rotateCircularAlbumArt: rotateCircularAlbumArt.checked
     property alias cfg_albumArtSquircleRoundness: albumArtSquircleRoundness.value
     property alias cfg_albumArtMetadataGap: albumArtMetadataGap.value
     property alias cfg_albumArtExcludedAppIds: albumArtExcludedAppIds.text
@@ -307,6 +308,19 @@ KCMUtils.SimpleKCM {
                 i18nc("@item:inlistbox", "Rounded"),
                 i18nc("@item:inlistbox", "Circle")
             ]
+        }
+
+        QQC2.CheckBox {
+            id: rotateCircularAlbumArt
+            leftPadding: mirrored
+                ? 0
+                : albumArtShape.indicator.width + albumArtShape.spacing
+            rightPadding: mirrored
+                ? albumArtShape.indicator.width + albumArtShape.spacing
+                : 0
+            text: i18nc("@option:check", "Rotate while playing")
+            enabled: replaceMediaPlayerIconWithAlbumArt.checked
+                && albumArtShape.currentIndex === 3
         }
 
         QQC2.SpinBox {

@@ -214,6 +214,8 @@ PlasmaCore.ToolTipArea {
         && String(mediaPlayerData?.artUrl ?? "").length > 0
     readonly property string albumArtShapeName: ["square", "squircle", "rounded", "circle"][
         Math.max(0, Math.min(3, Plasmoid.configuration.albumArtShape))]
+    readonly property bool rotateCircularAlbumArt: Plasmoid.configuration.rotateCircularAlbumArt
+        && albumArtShapeName === "circle"
     readonly property real albumArtPadding: mediaAlbumArtEnabled
         ? Plasmoid.configuration.albumArtPadding
         : 0
@@ -1026,6 +1028,8 @@ PlasmaCore.ToolTipArea {
         Item {
             id: albumArtViewport
 
+            property real albumArtRotationAngle: 0
+
             anchors.centerIn: parent
             width: Math.max(0, (task.albumArtShapeName === "circle"
                 ? Math.min(parent.width, parent.height)
@@ -1105,6 +1109,7 @@ PlasmaCore.ToolTipArea {
                 maskSource: albumArtMask
                 visible: albumArtFirst.opacity > 0
                 opacity: albumArtFirst.opacity
+                rotation: albumArtViewport.albumArtRotationAngle
             }
 
             GE.OpacityMask {
@@ -1113,6 +1118,19 @@ PlasmaCore.ToolTipArea {
                 maskSource: albumArtMask
                 visible: albumArtSecond.opacity > 0
                 opacity: albumArtSecond.opacity
+                rotation: albumArtViewport.albumArtRotationAngle
+            }
+
+            NumberAnimation {
+                target: albumArtViewport
+                property: "albumArtRotationAngle"
+                from: 0
+                to: 360
+                duration: 8000
+                loops: Animation.Infinite
+                running: task.mediaAlbumArtEnabled
+                    && task.rotateCircularAlbumArt
+                    && task.mediaProgressPlaying
             }
 
             Rectangle {
