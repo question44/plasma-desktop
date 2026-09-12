@@ -75,6 +75,18 @@
       <label>Whether to show tooltips when hovering task buttons.</label>
       <default>true</default>
     </entry>
+    <entry name="tooltipPreviewWidth" type="Int">
+      <label>Width of task tooltip previews in grid units.</label>
+      <default>16</default>
+      <min>8</min>
+      <max>40</max>
+    </entry>
+    <entry name="tooltipPreviewHeight" type="Int">
+      <label>Height of task tooltip previews in grid units.</label>
+      <default>8</default>
+      <min>4</min>
+      <max>24</max>
+    </entry>
     <entry name="taskMaxWidth" type="Enum">
       <label>Tune the max width of task items.</label>
       <choices>
@@ -252,6 +264,10 @@
       <label>Color source for media-player playback progress and dynamic task backgrounds.</label>
       <default>1</default>
     </entry>
+    <entry name="albumArtColorStrategy" type="Int">
+      <label>Color extracted from album art.</label>
+      <default>1</default>
+    </entry>
     <entry name="expandMediaPlayerTasks" type="Bool">
       <label>Whether playing or paused media-player tasks use a wider layout on horizontal panels.</label>
       <default>false</default>
@@ -308,6 +324,10 @@
       <label>Whether wide media-player tasks show a repeat button.</label>
       <default>true</default>
     </entry>
+    <entry name="showWideMediaTime" type="Bool">
+      <label>Whether wide media tasks show current and total time when not hovered.</label>
+      <default>false</default>
+    </entry>
     <entry name="showTooltipMediaShuffle" type="Bool">
       <label>Whether media thumbnail previews show a shuffle button.</label>
       <default>true</default>
@@ -351,6 +371,16 @@
     <entry name="showTooltipMediaRepeat" type="Bool">
       <label>Whether media thumbnail previews show a repeat button.</label>
       <default>true</default>
+    </entry>
+    <entry name="showTooltipLyrics" type="Bool">
+      <label>Whether media thumbnail previews show synchronized lyrics instead of the window thumbnail.</label>
+      <default>false</default>
+    </entry>
+    <entry name="tooltipLyricsVisibleLineCount" type="Int">
+      <label>Number of lyric lines visible in media thumbnail previews.</label>
+      <default>5</default>
+      <min>3</min>
+      <max>9</max>
     </entry>
     <entry name="wideMediaControlsBackgroundStyle" type="Int">
       <label>Background treatment for media controls in wide media-player tasks.</label>

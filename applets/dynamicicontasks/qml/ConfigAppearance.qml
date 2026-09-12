@@ -20,6 +20,8 @@ KCMUtils.SimpleKCM {
     readonly property bool iconOnly: true
 
     property alias cfg_showToolTips: showToolTips.checked
+    property alias cfg_tooltipPreviewWidth: tooltipPreviewWidth.value
+    property alias cfg_tooltipPreviewHeight: tooltipPreviewHeight.value
     property alias cfg_highlightWindows: highlightWindows.checked
     property alias cfg_fill: fill.checked
     property alias cfg_maxStripes: maxStripes.value
@@ -65,6 +67,28 @@ KCMUtils.SimpleKCM {
         QQC2.CheckBox {
             id: highlightWindows
             text: showToolTips.checked ? i18nc("@option:check section General", "Hide other windows when hovering over previews") : i18nc("@option:check section General", "Hide other windows when hovering over tooltips")
+        }
+
+        QQC2.SpinBox {
+            id: tooltipPreviewWidth
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Tooltip preview width:")
+            from: 8
+            to: 40
+            stepSize: 1
+            enabled: showToolTips.checked
+            textFromValue: value => i18nc("@item:valuesuffix grid units", "%1 grid units", value)
+            valueFromText: text => parseInt(text)
+        }
+
+        QQC2.SpinBox {
+            id: tooltipPreviewHeight
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Tooltip preview height:")
+            from: 4
+            to: 24
+            stepSize: 1
+            enabled: showToolTips.checked
+            textFromValue: value => i18nc("@item:valuesuffix grid units", "%1 grid units", value)
+            valueFromText: text => parseInt(text)
         }
 
         QQC2.CheckBox {

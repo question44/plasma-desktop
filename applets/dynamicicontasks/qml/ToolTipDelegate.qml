@@ -53,7 +53,8 @@ Loader {
 
     readonly property bool isVerticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     // This number controls the overall size of the window tooltips
-    readonly property int tooltipInstanceMaximumWidth: Kirigami.Units.gridUnit * 16
+    readonly property int tooltipInstanceMaximumWidth: Kirigami.Units.gridUnit * Plasmoid.configuration.tooltipPreviewWidth
+    readonly property int tooltipInstancePreferredHeight: Kirigami.Units.gridUnit * Plasmoid.configuration.tooltipPreviewHeight
 
     // These properties are required to make tooltip interactive when there is a player but no window is present.
     readonly property Mpris.PlayerContainer playerData: parentTask?.mediaPlayerData
@@ -116,7 +117,7 @@ Loader {
                 // that estimatedHeight while it's not available
                 let listContentHeight = groupToolTipListView.orientation == ListView.Vertical
                     ? groupToolTipListView.contentHeight
-                    : groupToolTipListView.currentItem?.implicitHeight ?? toolTipDelegate.tooltipInstanceMaximumWidth
+                    : groupToolTipListView.currentItem?.implicitHeight ?? toolTipDelegate.tooltipInstancePreferredHeight
 
                 return Math.min(maximumHeight, Math.max(delegateModel.estimatedHeight, listContentHeight + scrollBarHeight))
             }
@@ -151,7 +152,7 @@ Loader {
 
                 // On Wayland, a tooltip has a significant resizing process, so estimate the size first.
                 readonly property real estimatedWidth: (toolTipDelegate.isVerticalPanel || !Plasmoid.configuration.showToolTips ? 1 : count) * (toolTipDelegate.tooltipInstanceMaximumWidth + Kirigami.Units.gridUnit) - Kirigami.Units.gridUnit
-                readonly property real estimatedHeight: (toolTipDelegate.isVerticalPanel || !Plasmoid.configuration.showToolTips ? count : 1) * (Plasmoid.configuration.showToolTips ? (toolTipDelegate.tooltipInstanceMaximumWidth / 2 + Kirigami.Units.gridUnit) : Kirigami.Units.gridUnit * 2) - Kirigami.Units.gridUnit
+                readonly property real estimatedHeight: (toolTipDelegate.isVerticalPanel || !Plasmoid.configuration.showToolTips ? count : 1) * (Plasmoid.configuration.showToolTips ? (toolTipDelegate.tooltipInstancePreferredHeight + Kirigami.Units.gridUnit) : Kirigami.Units.gridUnit * 2) - Kirigami.Units.gridUnit
 
                 model: tasksModel
 

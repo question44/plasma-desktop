@@ -34,6 +34,8 @@ the stock task model and interactions, while adding:
   whose visibility mode and displayed buttons can be configured independently;
   thumbnail-preview shuffle and repeat buttons have separate settings and sit
   together beside the transport controls;
+- optional MPRIS-synchronized LRCLIB lyrics in media tooltips, with the current
+  line centered, softened surrounding lines, and fading at the top and bottom;
 - a dedicated Media settings tab for playback controls, progress, album art,
   exclusions, and task-to-MPRIS ID mappings;
 - optional animations for segment emphasis, position, size, shape, and entry;

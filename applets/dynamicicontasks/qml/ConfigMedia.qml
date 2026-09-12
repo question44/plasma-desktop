@@ -20,10 +20,10 @@ KCMUtils.SimpleKCM {
     property alias cfg_tooltipControls: tooltipControls.checked
     property alias cfg_showMediaProgress: showMediaProgress.checked
     property alias cfg_mediaPlayerColorSource: mediaPlayerColorSource.currentIndex
+    property alias cfg_albumArtColorStrategy: albumArtColorStrategy.currentIndex
     property alias cfg_expandMediaPlayerTasks: expandMediaPlayerTasks.checked
     property alias cfg_mediaPlayerTaskMinWidth: mediaPlayerTaskMinWidth.value
     property alias cfg_mediaPlayerTaskMaxWidth: mediaPlayerTaskMaxWidth.value
-    property alias cfg_showMediaMetadata: showMediaMetadata.checked
     property alias cfg_mediaMetadataLayout: mediaMetadataLayout.currentIndex
     property bool cfg_scrollMediaMetadata
     property int cfg_mediaMetadataScrollMode
@@ -34,11 +34,14 @@ KCMUtils.SimpleKCM {
     property alias cfg_showWideMediaNext: showWideMediaNext.checked
     property alias cfg_showWideMediaShuffle: showWideMediaShuffle.checked
     property alias cfg_showWideMediaRepeat: showWideMediaRepeat.checked
+    property alias cfg_showWideMediaTime: showWideMediaTime.checked
     property alias cfg_showTooltipMediaShuffle: showTooltipMediaShuffle.checked
     property alias cfg_showTooltipMediaRepeat: showTooltipMediaRepeat.checked
     property alias cfg_showTooltipMediaPrevious: showTooltipMediaPrevious.checked
     property alias cfg_showTooltipMediaPlayPause: showTooltipMediaPlayPause.checked
     property alias cfg_showTooltipMediaNext: showTooltipMediaNext.checked
+    property alias cfg_showTooltipLyrics: showTooltipLyrics.checked
+    property alias cfg_tooltipLyricsVisibleLineCount: tooltipLyricsVisibleLineCount.value
     property alias cfg_showMediaVisualizer: showMediaVisualizer.checked
     property alias cfg_mediaVisualizerMaxHeight: mediaVisualizerMaxHeight.value
     property alias cfg_mediaVisualizerOpacity: mediaVisualizerOpacity.value
@@ -119,8 +122,28 @@ KCMUtils.SimpleKCM {
             ]
         }
 
+        Item {
+            Kirigami.FormData.isSection: true
+        }
+
+        QQC2.ComboBox {
+            id: albumArtColorStrategy
+            Kirigami.FormData.label: i18nc("@label:listbox", "Album-art color:")
+            enabled: mediaPlayerColorSource.currentIndex === 1
+            model: [
+                i18nc("@item:inlistbox", "Dominant color"),
+                i18nc("@item:inlistbox", "Accent color"),
+                i18nc("@item:inlistbox", "Average palette")
+            ]
+        }
+
+        Item {
+            Kirigami.FormData.isSection: true
+        }
+
         QQC2.CheckBox {
             id: expandMediaPlayerTasks
+            Kirigami.FormData.label: i18nc("@label for media settings", "Wide task:")
             text: i18nc("@option:check", "Use a wide task for playing and paused media players")
         }
 
@@ -164,16 +187,10 @@ KCMUtils.SimpleKCM {
             color: Kirigami.Theme.disabledTextColor
         }
 
-        QQC2.CheckBox {
-            id: showMediaMetadata
-            Kirigami.FormData.label: i18nc("@label for media settings", "Metadata:")
-            text: i18nc("@option:check", "Show artist and track in wide media tasks")
-        }
-
         QQC2.ComboBox {
             id: mediaMetadataLayout
             Kirigami.FormData.label: i18nc("@label:listbox", "Metadata layout:")
-            enabled: showMediaMetadata.checked
+            enabled: expandMediaPlayerTasks.checked
             model: [
                 i18nc("@item:inlistbox", "Auto"),
                 i18nc("@item:inlistbox", "Stacked"),
@@ -184,7 +201,7 @@ KCMUtils.SimpleKCM {
         QQC2.ComboBox {
             id: mediaMetadataScrollMode
             Kirigami.FormData.label: i18nc("@label:listbox", "Overflowing text:")
-            enabled: showMediaMetadata.checked
+            enabled: expandMediaPlayerTasks.checked
             currentIndex: root.cfg_scrollMediaMetadata
                 ? root.cfg_mediaMetadataScrollMode + 1
                 : 0
@@ -288,6 +305,47 @@ KCMUtils.SimpleKCM {
                 text: i18nc("@option:check", "Repeat")
                 enabled: tooltipControls.checked
             }
+        }
+
+        QQC2.CheckBox {
+            id: showWideMediaTime
+            Kirigami.FormData.label: i18nc("@label for media settings", "Panel time:")
+            text: i18nc("@option:check", "Show current / total time when not hovered")
+            enabled: expandMediaPlayerTasks.checked && wideMediaControlsMode.currentIndex === 1
+        }
+
+        Item {
+            Kirigami.FormData.isSection: true
+        }
+
+        QQC2.CheckBox {
+            id: showTooltipLyrics
+            Kirigami.FormData.label: i18nc("@label for media settings", "Lyrics:")
+            text: i18nc("@option:check", "Show synchronized lyrics instead of the thumbnail")
+            enabled: tooltipControls.checked
+        }
+
+        QQC2.SpinBox {
+            id: tooltipLyricsVisibleLineCount
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Visible lines:")
+            from: 3
+            to: 9
+            stepSize: 2
+            enabled: showTooltipLyrics.checked && tooltipControls.checked
+            textFromValue: value => i18nc("@item:valuesuffix lines", "%1 lines", value)
+            valueFromText: text => parseInt(text)
+        }
+
+        QQC2.Label {
+            Kirigami.FormData.label: ""
+            Layout.fillWidth: true
+            text: i18nc("@info", "Lyrics are fetched from LRCLIB using the active player's MPRIS metadata. Network access is required.")
+            wrapMode: Text.Wrap
+            color: Kirigami.Theme.disabledTextColor
+        }
+
+        Item {
+            Kirigami.FormData.isSection: true
         }
 
         QQC2.CheckBox {
@@ -427,6 +485,7 @@ KCMUtils.SimpleKCM {
             from: 0
             to: 50
             stepSize: 1
+            visible: albumArtShape.currentIndex === 1
             enabled: replaceMediaPlayerIconWithAlbumArt.checked && albumArtShape.currentIndex === 1
             textFromValue: value => i18nc("@item:valuesuffix percent", "%1%", value)
             valueFromText: text => parseInt(text)
@@ -449,7 +508,11 @@ KCMUtils.SimpleKCM {
             Layout.minimumWidth: Kirigami.Units.gridUnit * 16
             Layout.preferredHeight: Kirigami.Units.gridUnit * 5
 
-            QQC2.TextArea {
+        Item {
+            Kirigami.FormData.isSection: true
+        }
+
+        QQC2.TextArea {
                 id: albumArtExcludedAppIds
                 placeholderText: i18nc("@info:placeholder", "application.desktop.id")
                 wrapMode: TextEdit.NoWrap

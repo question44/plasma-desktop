@@ -73,6 +73,144 @@ ColumnLayout {
 
     readonly property bool titleIncludesTrack: toolTipDelegate.playerData !== null && title.includes(toolTipDelegate.playerData.track)
 
+    readonly property bool lyricsEligible: Plasmoid.configuration.showTooltipLyrics
+        && toolTipDelegate.playerData !== null
+        && String(toolTipDelegate.playerData.track ?? "").length > 0
+        && (root.index === 0 || root.titleIncludesTrack)
+    readonly property bool lyricsViewVisible: lyricsEligible
+    readonly property color lyricsAccentColor: toolTipDelegate.parentTask
+        ? toolTipDelegate.parentTask.mediaProgressColor
+        : Kirigami.Theme.highlightColor
+    property var lyricsRequest: null
+    property string lyricsTrackKey: ""
+    property int lyricsCurrentIndex: -1
+    property bool lyricsHasTiming: false
+    property bool lyricsLoading: false
+
+    ListModel {
+        id: lyricsLines
+    }
+
+    function clearLyrics() {
+        lyricsLines.clear();
+        lyricsCurrentIndex = -1;
+        lyricsHasTiming = false;
+    }
+
+    function parseLyrics(text) {
+        const parsed = [];
+        const lines = String(text ?? "").split(/\r?\n/);
+        for (const line of lines) {
+            const stamps = line.match(/\[(\d+):(\d+(?:\.\d+)?)\]/g) || [];
+            const lyric = line.replace(/\[[^\]]+\]/g, "").trim();
+            if (!lyric) {
+                continue;
+            }
+            if (stamps.length === 0) {
+                parsed.push({ time: -1, lyric });
+                continue;
+            }
+            for (const stamp of stamps) {
+                const match = stamp.match(/\[(\d+):(\d+(?:\.\d+)?)\]/);
+                if (match) {
+                    parsed.push({ time: Number(match[1]) * 60 + Number(match[2]), lyric });
+                }
+            }
+        }
+        parsed.sort((a, b) => a.time - b.time);
+        clearLyrics();
+        lyricsHasTiming = parsed.some(line => line.time >= 0);
+        for (const line of parsed) {
+            lyricsLines.append(line);
+        }
+    }
+
+    function refreshLyricsPosition() {
+        if (!lyricsEligible || lyricsLines.count === 0) {
+            return;
+        }
+        if (!lyricsHasTiming) {
+            if (lyricsCurrentIndex < 0) {
+                lyricsCurrentIndex = 0;
+            }
+            return;
+        }
+        const positionSeconds = Number(toolTipDelegate.playerData?.position ?? 0) / 1000000;
+        let nextIndex = 0;
+        for (let i = 0; i < lyricsLines.count; ++i) {
+            if (Number(lyricsLines.get(i).time) <= positionSeconds) {
+                nextIndex = i;
+            } else {
+                break;
+            }
+        }
+        if (nextIndex !== lyricsCurrentIndex) {
+            lyricsCurrentIndex = nextIndex;
+        }
+    }
+
+    function refreshLyrics() {
+        if (!lyricsEligible) {
+            if (lyricsRequest) {
+                lyricsRequest.abort();
+                lyricsRequest = null;
+            }
+            lyricsTrackKey = "";
+            lyricsLoading = false;
+            clearLyrics();
+            return;
+        }
+
+        const player = toolTipDelegate.playerData;
+        const track = String(player.track ?? "");
+        const artist = String(player.artist ?? "");
+        const album = String(player.album ?? "");
+        const key = `${track}\u0000${artist}\u0000${album}`;
+        if (key === lyricsTrackKey) {
+            refreshLyricsPosition();
+            return;
+        }
+
+        lyricsTrackKey = key;
+        if (lyricsRequest) {
+            lyricsRequest.abort();
+        }
+        clearLyrics();
+        lyricsLoading = true;
+        const params = `track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}&album_name=${encodeURIComponent(album)}&duration=${Math.round(Number(player.length ?? 0) / 1000000)}`;
+        const requestKey = key;
+        const request = new XMLHttpRequest();
+        lyricsRequest = request;
+        request.open("GET", `https://lrclib.net/api/get?${params}`);
+        request.setRequestHeader("User-Agent", "Dynamic Icon Tasks (https://github.com/janzon/plasma-desktop-dynamic-icon-tasks)");
+        request.onreadystatechange = () => {
+            if (request.readyState !== XMLHttpRequest.DONE || requestKey !== root.lyricsTrackKey) {
+                return;
+            }
+            lyricsRequest = null;
+            lyricsLoading = false;
+            if (request.status !== 200) {
+                return;
+            }
+            try {
+                const response = JSON.parse(request.responseText);
+                parseLyrics(response.syncedLyrics || response.plainLyrics || "");
+                refreshLyricsPosition();
+            } catch (error) {
+                console.warn("Failed to parse LRCLIB response", error);
+            }
+        };
+        request.send();
+    }
+
+    Timer {
+        id: lyricsTimer
+        interval: 250
+        repeat: true
+        running: root.lyricsEligible
+        onTriggered: root.refreshLyrics()
+    }
+
     // Lots of spacing with no thumbnails looks bad
     spacing: Plasmoid.configuration.showToolTips ? Kirigami.Units.smallSpacing : 0
 
@@ -235,7 +373,7 @@ ColumnLayout {
         id: thumbnailSourceItem
 
         Layout.fillWidth: true
-        Layout.preferredHeight: Kirigami.Units.gridUnit * 8
+        Layout.preferredHeight: toolTipDelegate.tooltipInstancePreferredHeight
 
         clip: true
         visible: Plasmoid.configuration.showToolTips && toolTipDelegate.isWin
@@ -253,7 +391,8 @@ ColumnLayout {
 
         Loader {
             id: thumbnailLoader
-            active: !toolTipDelegate.isLauncher
+            active: !root.lyricsViewVisible
+                && !toolTipDelegate.isLauncher
                 && !albumArtImage.visible
                 && (Number.isInteger(thumbnailSourceItem.winId) || pipeWireLoader.item
                 && !(pipeWireLoader.item as PipeWireThumbnail).hasThumbnail)
@@ -314,7 +453,8 @@ ColumnLayout {
             // shadow can cover up the highlight
             anchors.margins: thumbnailLoader.anchors.margins
 
-            active: Plasmoid.configuration.showToolTips
+            active: !root.lyricsViewVisible
+                && Plasmoid.configuration.showToolTips
                 && !toolTipDelegate.isLauncher
                 && !albumArtImage.visible
                 && KWindowSystem.isPlatformWayland
@@ -325,7 +465,8 @@ ColumnLayout {
         }
 
         Loader {
-            active: Plasmoid.configuration.showToolTips
+            active: !root.lyricsViewVisible
+                && Plasmoid.configuration.showToolTips
                 && (((pipeWireLoader.item as PipeWireThumbnail)?.hasThumbnail ?? false) || (thumbnailLoader.status === Loader.Ready && !root.isMinimized))
             asynchronous: true
             visible: active
@@ -342,7 +483,8 @@ ColumnLayout {
         }
 
         Loader {
-            active: Plasmoid.configuration.showToolTips
+            active: !root.lyricsViewVisible
+                && Plasmoid.configuration.showToolTips
                 && albumArtImage.visible
                 && albumArtImage.status === Image.Ready
                 && root.index !== -1 // Avoid loading when the instance is going to be destroyed
@@ -386,7 +528,145 @@ ColumnLayout {
             retainWhileLoading: true
             source: toolTipDelegate.playerData?.artUrl ?? ""
             fillMode: Image.PreserveAspectFit
-            visible: available
+            visible: available && !root.lyricsViewVisible
+        }
+
+        // Lyrics use a heavily blurred, aspect-cropped version of the album art
+        // as a full-bleed background so the text remains visually connected to
+        // the track without competing with the readable lyric lines.
+        Image {
+            id: lyricsBackdropImage
+            anchors.fill: parent
+            source: toolTipDelegate.playerData?.artUrl ?? ""
+            sourceSize: Qt.size(parent.width, parent.height)
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            visible: root.lyricsViewVisible && status === Image.Ready
+            opacity: 0.7
+        }
+
+        GE.FastBlur {
+            id: lyricsBackdropBlur
+            anchors.fill: lyricsBackdropImage
+            source: lyricsBackdropImage
+            radius: 52
+            transparentBorder: true
+            visible: lyricsBackdropImage.visible
+            opacity: 0.95
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: root.lyricsViewVisible && lyricsBackdropImage.visible ? 0.38 : 0
+        }
+
+        Item {
+            id: lyricsView
+            anchors.fill: parent
+            visible: root.lyricsViewVisible
+            clip: true
+
+            ListView {
+                id: lyricsListView
+                anchors.fill: parent
+                anchors.margins: Kirigami.Units.smallSpacing
+                model: lyricsLines
+                interactive: false
+                spacing: Kirigami.Units.smallSpacing / 2
+                clip: true
+                currentIndex: root.lyricsCurrentIndex
+                highlightRangeMode: ListView.StrictlyEnforceRange
+                preferredHighlightBegin: Math.max(0, (height - (lyricsLineMetrics.height * 1.5)) / 2)
+                preferredHighlightEnd: preferredHighlightBegin + lyricsLineMetrics.height
+                highlightMoveDuration: Kirigami.Units.shortDuration
+                highlightMoveVelocity: -1
+
+                delegate: Item {
+                    id: lyricDelegate
+                    required property string lyric
+                    required property real time
+                    required property int index
+                    width: lyricsListView.width
+                    height: lyricText.implicitHeight
+
+                    readonly property bool current: index === root.lyricsCurrentIndex
+                    readonly property real distance: Math.abs(index - root.lyricsCurrentIndex)
+                    readonly property real targetScale: lyricDelegate.current ? 1 : 0.98
+
+                    PlasmaComponents3.Label {
+                        id: lyricText
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        text: lyricDelegate.lyric
+                        horizontalAlignment: Text.AlignHCenter
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                        wrapMode: Text.Wrap
+                        color: lyricDelegate.current ? root.lyricsAccentColor : Kirigami.Theme.textColor
+                        opacity: lyricDelegate.current ? 1 : Math.max(0.22, 0.72 - lyricDelegate.distance * 0.14)
+                        font.bold: lyricDelegate.current
+                        scale: lyricDelegate.targetScale
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: Kirigami.Units.shortDuration
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: Kirigami.Units.shortDuration
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Kirigami.Units.shortDuration
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+                        layer.enabled: !lyricDelegate.current
+                        layer.effect: GE.FastBlur {
+                            radius: 1.5
+                        }
+                    }
+                }
+
+                TextMetrics {
+                    id: lyricsLineMetrics
+                    text: "Current lyric line"
+                    font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
+                }
+            }
+
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: Kirigami.Units.gridUnit * 1.8
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.82) }
+                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
+                }
+            }
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: Kirigami.Units.gridUnit * 1.8
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.0) }
+                    GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.82) }
+                }
+            }
+
+            PlasmaComponents3.Label {
+                anchors.centerIn: parent
+                visible: lyricsLines.count === 0
+                text: root.lyricsLoading ? i18nc("@info", "Loading lyrics…") : i18nc("@info", "No synchronized lyrics")
+                color: Kirigami.Theme.textColor
+                opacity: 0.7
+            }
         }
 
         // hoverHandler has to be unloaded after the instance is pooled in order to avoid getting the old containsMouse status when the same instance is reused, so put it in a Loader.
@@ -490,8 +770,6 @@ ColumnLayout {
             }
 
             onMoved: {
-                // The Plasma MPRIS wrapper exposes position and length in the
-                // same units expected by its Seek() method.
                 const offset = value - (toolTipDelegate.playerData?.position ?? 0);
                 toolTipDelegate.playerData?.Seek(offset);
             }

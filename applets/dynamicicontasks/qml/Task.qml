@@ -111,7 +111,6 @@ PlasmaCore.ToolTipArea {
         && (mediaProgressPlaying || mediaProgressPaused)
     readonly property bool expandedMediaTask: mediaTaskExpansionCandidate
     readonly property bool mediaMetadataEnabled: expandedMediaTask
-        && Plasmoid.configuration.showMediaMetadata
         && (mediaTrackText.length > 0 || mediaArtistText.length > 0)
     readonly property string mediaTrackText: String(mediaPlayerData?.track ?? "")
     readonly property string mediaArtistText: String(mediaPlayerData?.artist ?? "")
@@ -136,6 +135,20 @@ PlasmaCore.ToolTipArea {
     readonly property string mediaControlsVisibilityMode: ["always", "hover"][
         Math.max(0, Math.min(1, Plasmoid.configuration.wideMediaControlsMode))]
     readonly property bool mediaControlsAlwaysVisible: mediaControlsVisibilityMode === "always"
+    readonly property bool mediaTimeVisible: Plasmoid.configuration.showWideMediaTime
+        && !mediaControlsAlwaysVisible
+        && !containsMouse
+        && mediaMetadataEnabled
+        && (mediaProgressPlaying || mediaProgressPaused)
+        && (mediaPlayerData?.length ?? 0) > 0
+
+    function formatMediaTime(seconds: real): string {
+        const microsecondsPerSecond = 1000000;
+        const totalSeconds = Math.max(0, Math.floor(seconds / microsecondsPerSecond));
+        const minutes = Math.floor(totalSeconds / 60);
+        const remaining = totalSeconds % 60;
+        return minutes + ":" + (remaining < 10 ? "0" : "") + remaining;
+    }
     property bool mediaControlsHoverReady: false
     readonly property string mediaControlsBackgroundMode: ["solid", "diffuse"][
         Math.max(0, Math.min(1, Plasmoid.configuration.wideMediaControlsBackgroundStyle))]
@@ -248,11 +261,35 @@ PlasmaCore.ToolTipArea {
         : 0
     readonly property string mediaPlayerColorSourceName: ["icon", "album"][
         Math.max(0, Math.min(1, Plasmoid.configuration.mediaPlayerColorSource))]
+    readonly property string albumArtColorStrategyName: ["dominant", "accent", "average"][
+        Math.max(0, Math.min(2, Plasmoid.configuration.albumArtColorStrategy))]
     readonly property bool mediaAlbumArtColorAvailable:
         mediaPlayerColorSourceName === "album"
         && !mediaPresentationExcluded
         && String(mediaPlayerData?.artUrl ?? "").length > 0
         && albumArtColors.palette.length > 0
+    readonly property color mediaAlbumArtColor: {
+        const strategy = albumArtColorStrategyName;
+        if (strategy === "dominant") {
+            return albumArtColors.dominant;
+        }
+        if (strategy === "accent") {
+            return albumArtColors.highlight;
+        }
+        if (albumArtColors.palette.length === 0) {
+            return albumArtColors.highlight;
+        }
+        let red = 0;
+        let green = 0;
+        let blue = 0;
+        for (const color of albumArtColors.palette) {
+            red += color.r;
+            green += color.g;
+            blue += color.b;
+        }
+        const count = albumArtColors.palette.length;
+        return Qt.rgba(red / count, green / count, blue / count, 1);
+    }
     readonly property color mediaProgressColor: taskAccentColor
 
     function findMediaPlayer(): Mpris.PlayerContainer {
@@ -331,7 +368,7 @@ PlasmaCore.ToolTipArea {
             return Plasmoid.configuration.fixedActiveBackgroundColor;
         }
         const extractedColor = mediaAlbumArtColorAvailable
-            ? albumArtColors.highlight
+            ? mediaAlbumArtColor
             : (Plasmoid.configuration.activeColorSource === 1
                 ? taskIconColors.dominant
                 : taskIconColors.highlight);
@@ -1614,6 +1651,38 @@ PlasmaCore.ToolTipArea {
         }
     }
 
+    Item {
+        id: mediaTaskTimeLabel
+
+        z: 2
+        visible: task.mediaTimeVisible
+        anchors.right: parent.right
+        anchors.rightMargin: taskFrame.margins.right
+        anchors.verticalCenter: parent.verticalCenter
+        width: timeLabel.implicitWidth
+        height: timeLabel.implicitHeight
+
+        PlasmaComponents3.Label {
+            id: timeLabel
+            text: task.formatMediaTime(task.mediaPlayerData?.position ?? 0)
+                + " / " + task.formatMediaTime(task.mediaPlayerData?.length ?? 0)
+            color: task.mediaProgressColor
+            opacity: 0.9
+            font: Kirigami.Theme.smallFont
+        }
+
+        GE.DropShadow {
+            anchors.fill: timeLabel
+            z: -1
+            source: timeLabel
+            horizontalOffset: 1
+            verticalOffset: 1
+            radius: 2
+            samples: 7
+            color: Qt.rgba(0, 0, 0, 0.78)
+        }
+    }
+
     // Keep the diffuse field within the task even when its edge spreads beyond
     // the controls themselves. This avoids tinting neighboring panel items.
     Item {
@@ -2031,11 +2100,11 @@ PlasmaCore.ToolTipArea {
 
             Behavior on width {
                 enabled: task.mediaProgressPlaying
-                NumberAnimation { duration: 1000; easing.type: Easing.Linear }
+                NumberAnimation { duration: 200; easing.type: Easing.Linear }
             }
             Behavior on height {
                 enabled: task.mediaProgressPlaying
-                NumberAnimation { duration: 1000; easing.type: Easing.Linear }
+                NumberAnimation { duration: 200; easing.type: Easing.Linear }
             }
             Behavior on opacity {
                 NumberAnimation { duration: Kirigami.Units.shortDuration }
