@@ -25,6 +25,9 @@ RowLayout {
     // loaded outside the applet's Plasmoid context.
     property bool showShuffle: true
     property bool showRepeat: true
+    property bool showPrevious: true
+    property bool showPlayPause: true
+    property bool showNext: true
 
     enabled: toolTipDelegate.playerData?.canControl ?? false
     spacing: Kirigami.Units.smallSpacing
@@ -72,12 +75,14 @@ RowLayout {
     }
 
     PlasmaComponents3.ToolButton {
+        visible: root.showPrevious
         enabled: toolTipDelegate.playerData?.canGoPrevious ?? false
         icon.name: mirrored ? "media-skip-forward" : "media-skip-backward"
         onClicked: toolTipDelegate.playerData.Previous()
     }
 
     PlasmaComponents3.ToolButton {
+        visible: root.showPlayPause
         enabled: (root.isPlaying ? toolTipDelegate.playerData?.canPause : toolTipDelegate.playerData?.canPlay) ?? false
         icon.name: root.isPlaying ? "media-playback-pause" : "media-playback-start"
         onClicked: {
@@ -90,6 +95,7 @@ RowLayout {
     }
 
     PlasmaComponents3.ToolButton {
+        visible: root.showNext
         enabled: toolTipDelegate.playerData?.canGoNext ?? false
         icon.name: mirrored ? "media-skip-backward" : "media-skip-forward"
         onClicked: toolTipDelegate.playerData.Next()

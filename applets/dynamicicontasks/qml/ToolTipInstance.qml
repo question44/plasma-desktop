@@ -436,6 +436,68 @@ ColumnLayout {
         when: playerController.item !== null
     }
 
+    Binding {
+        target: playerController.item
+        property: "showPrevious"
+        value: Plasmoid.configuration.showTooltipMediaPrevious
+        when: playerController.item !== null
+    }
+
+    Binding {
+        target: playerController.item
+        property: "showPlayPause"
+        value: Plasmoid.configuration.showTooltipMediaPlayPause
+        when: playerController.item !== null
+    }
+
+    Binding {
+        target: playerController.item
+        property: "showNext"
+        value: Plasmoid.configuration.showTooltipMediaNext
+        when: playerController.item !== null
+    }
+
+    Loader {
+        id: mediaSeekControls
+        active: (toolTipDelegate.parentTask?.tooltipControlsEnabled
+             && toolTipDelegate.playerData?.canControl
+             && (toolTipDelegate.playerData?.length ?? 0) > 0
+             && ((root.hasTrackInATitle && albumArtImage.available) || (!root.hasTrackInATitle && root.index == 0))) ?? false
+        asynchronous: true
+        visible: active
+        Layout.fillWidth: true
+        Layout.maximumWidth: headerItem.Layout.maximumWidth
+        Layout.leftMargin: headerItem.Layout.margins
+        Layout.rightMargin: headerItem.Layout.margins
+        sourceComponent: PlasmaComponents3.Slider {
+            id: seekSlider
+
+            from: 0
+            to: toolTipDelegate.playerData?.length ?? 0
+            stepSize: 0.1
+            value: toolTipDelegate.playerData?.position ?? 0
+            // Some players (notably Spotify) expose Seek but report CanSeek
+            // unreliably. Keep the control usable for controllable players.
+            enabled: (toolTipDelegate.playerData?.canSeek
+                || toolTipDelegate.playerData?.canControl) ?? false
+            Accessible.name: i18nc("Accessibility data on media seek slider", "Seek in media")
+
+            Binding {
+                target: seekSlider
+                property: "value"
+                value: toolTipDelegate.playerData?.position ?? 0
+                when: !seekSlider.pressed
+            }
+
+            onMoved: {
+                // The Plasma MPRIS wrapper exposes position and length in the
+                // same units expected by its Seek() method.
+                const offset = value - (toolTipDelegate.playerData?.position ?? 0);
+                toolTipDelegate.playerData?.Seek(offset);
+            }
+        }
+    }
+
     // Volume controls
     Loader {
         id: volumeControls

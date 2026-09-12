@@ -35,6 +35,9 @@ KCMUtils.SimpleKCM {
     property alias cfg_showWideMediaRepeat: showWideMediaRepeat.checked
     property alias cfg_showTooltipMediaShuffle: showTooltipMediaShuffle.checked
     property alias cfg_showTooltipMediaRepeat: showTooltipMediaRepeat.checked
+    property alias cfg_showTooltipMediaPrevious: showTooltipMediaPrevious.checked
+    property alias cfg_showTooltipMediaPlayPause: showTooltipMediaPlayPause.checked
+    property alias cfg_showTooltipMediaNext: showTooltipMediaNext.checked
     property alias cfg_wideMediaControlsBackgroundStyle: wideMediaControlsBackgroundStyle.currentIndex
     property alias cfg_replaceMediaPlayerIconWithAlbumArt: replaceMediaPlayerIconWithAlbumArt.checked
     property alias cfg_showAppIconOnAlbumArt: showAppIconOnAlbumArt.checked
@@ -199,58 +202,74 @@ KCMUtils.SimpleKCM {
             ]
         }
 
-        QQC2.CheckBox {
-            id: showWideMediaPrevious
-            Kirigami.FormData.label: i18nc("@label for media settings", "Wide task buttons:")
-            text: i18nc("@option:check", "Previous track")
-            enabled: expandMediaPlayerTasks.checked
-        }
+        GridLayout {
+            Kirigami.FormData.label: i18nc("@label for media settings", "Media buttons:")
+            columns: 2
+            columnSpacing: Kirigami.Units.largeSpacing
 
-        QQC2.CheckBox {
-            id: showWideMediaPlayPause
-            leftPadding: mirrored ? 0 : showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing
-            rightPadding: mirrored ? showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing : 0
-            text: i18nc("@option:check", "Play / pause")
-            enabled: expandMediaPlayerTasks.checked
-        }
+            QQC2.Label {
+                text: i18nc("@label", "Panel")
+                font.bold: true
+            }
+            QQC2.Label {
+                text: i18nc("@label", "Tooltip")
+                font.bold: true
+            }
 
-        QQC2.CheckBox {
-            id: showWideMediaNext
-            leftPadding: mirrored ? 0 : showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing
-            rightPadding: mirrored ? showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing : 0
-            text: i18nc("@option:check", "Next track")
-            enabled: expandMediaPlayerTasks.checked
-        }
+            QQC2.CheckBox {
+                id: showWideMediaPrevious
+                text: i18nc("@option:check", "Previous track")
+                enabled: expandMediaPlayerTasks.checked
+            }
+            QQC2.CheckBox {
+                id: showTooltipMediaPrevious
+                text: i18nc("@option:check", "Previous track")
+                enabled: tooltipControls.checked
+            }
 
-        QQC2.CheckBox {
-            id: showWideMediaShuffle
-            leftPadding: mirrored ? 0 : showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing
-            rightPadding: mirrored ? showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing : 0
-            text: i18nc("@option:check", "Shuffle")
-            enabled: expandMediaPlayerTasks.checked
-        }
+            QQC2.CheckBox {
+                id: showWideMediaPlayPause
+                text: i18nc("@option:check", "Play / pause")
+                enabled: expandMediaPlayerTasks.checked
+            }
+            QQC2.CheckBox {
+                id: showTooltipMediaPlayPause
+                text: i18nc("@option:check", "Play / pause")
+                enabled: tooltipControls.checked
+            }
 
-        QQC2.CheckBox {
-            id: showWideMediaRepeat
-            leftPadding: mirrored ? 0 : showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing
-            rightPadding: mirrored ? showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing : 0
-            text: i18nc("@option:check", "Repeat")
-            enabled: expandMediaPlayerTasks.checked
-        }
+            QQC2.CheckBox {
+                id: showWideMediaNext
+                text: i18nc("@option:check", "Next track")
+                enabled: expandMediaPlayerTasks.checked
+            }
+            QQC2.CheckBox {
+                id: showTooltipMediaNext
+                text: i18nc("@option:check", "Next track")
+                enabled: tooltipControls.checked
+            }
 
-        QQC2.CheckBox {
-            id: showTooltipMediaShuffle
-            Kirigami.FormData.label: i18nc("@label for media settings", "Thumbnail buttons:")
-            text: i18nc("@option:check", "Shuffle")
-            enabled: tooltipControls.checked
-        }
+            QQC2.CheckBox {
+                id: showWideMediaShuffle
+                text: i18nc("@option:check", "Shuffle")
+                enabled: expandMediaPlayerTasks.checked
+            }
+            QQC2.CheckBox {
+                id: showTooltipMediaShuffle
+                text: i18nc("@option:check", "Shuffle")
+                enabled: tooltipControls.checked
+            }
 
-        QQC2.CheckBox {
-            id: showTooltipMediaRepeat
-            leftPadding: mirrored ? 0 : showTooltipMediaShuffle.indicator.width + showTooltipMediaShuffle.spacing
-            rightPadding: mirrored ? showTooltipMediaShuffle.indicator.width + showTooltipMediaShuffle.spacing : 0
-            text: i18nc("@option:check", "Repeat")
-            enabled: tooltipControls.checked
+            QQC2.CheckBox {
+                id: showWideMediaRepeat
+                text: i18nc("@option:check", "Repeat")
+                enabled: expandMediaPlayerTasks.checked
+            }
+            QQC2.CheckBox {
+                id: showTooltipMediaRepeat
+                text: i18nc("@option:check", "Repeat")
+                enabled: tooltipControls.checked
+            }
         }
 
         QQC2.ComboBox {

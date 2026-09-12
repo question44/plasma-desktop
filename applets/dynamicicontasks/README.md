@@ -33,10 +33,11 @@ the stock task model and interactions, while adding:
   content-growth ceiling, with optional artist/track metadata in stacked,
   inline, or automatic responsive layouts, plus previous/play-next/shuffle/repeat controls
   whose visibility mode and displayed buttons can be configured independently;
-  thumbnail-preview shuffle and repeat buttons have separate settings and sit
-  together beside the transport controls;
+  thumbnail-preview transport, shuffle, and repeat buttons have separate
+  settings from the panel buttons and sit together in the tooltip;
 - a dedicated Media settings tab for playback controls, progress, album art,
   exclusions, and task-to-MPRIS ID mappings;
+- a seek bar in media thumbnail tooltips for players that support seeking;
 - optional animations for segment emphasis, position, size, shape, and entry;
 - the stock group-expander badge is shown only in Plasma-standard mode;
 - linked or independently configurable background corner radii;

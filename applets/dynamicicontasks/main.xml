@@ -308,6 +308,18 @@
       <label>Whether media thumbnail previews show a shuffle button.</label>
       <default>true</default>
     </entry>
+    <entry name="showTooltipMediaPrevious" type="Bool">
+      <label>Whether media thumbnail previews show a previous-track button.</label>
+      <default>true</default>
+    </entry>
+    <entry name="showTooltipMediaPlayPause" type="Bool">
+      <label>Whether media thumbnail previews show a play-pause button.</label>
+      <default>true</default>
+    </entry>
+    <entry name="showTooltipMediaNext" type="Bool">
+      <label>Whether media thumbnail previews show a next-track button.</label>
+      <default>true</default>
+    </entry>
     <entry name="showTooltipMediaRepeat" type="Bool">
       <label>Whether media thumbnail previews show a repeat button.</label>
       <default>true</default>
