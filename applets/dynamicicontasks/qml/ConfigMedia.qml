@@ -31,6 +31,10 @@ KCMUtils.SimpleKCM {
     property alias cfg_showWideMediaPrevious: showWideMediaPrevious.checked
     property alias cfg_showWideMediaPlayPause: showWideMediaPlayPause.checked
     property alias cfg_showWideMediaNext: showWideMediaNext.checked
+    property alias cfg_showWideMediaShuffle: showWideMediaShuffle.checked
+    property alias cfg_showWideMediaRepeat: showWideMediaRepeat.checked
+    property alias cfg_showTooltipMediaShuffle: showTooltipMediaShuffle.checked
+    property alias cfg_showTooltipMediaRepeat: showTooltipMediaRepeat.checked
     property alias cfg_wideMediaControlsBackgroundStyle: wideMediaControlsBackgroundStyle.currentIndex
     property alias cfg_replaceMediaPlayerIconWithAlbumArt: replaceMediaPlayerIconWithAlbumArt.checked
     property alias cfg_showAppIconOnAlbumArt: showAppIconOnAlbumArt.checked
@@ -215,6 +219,37 @@ KCMUtils.SimpleKCM {
             rightPadding: mirrored ? showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing : 0
             text: i18nc("@option:check", "Next track")
             enabled: expandMediaPlayerTasks.checked
+        }
+
+        QQC2.CheckBox {
+            id: showWideMediaShuffle
+            leftPadding: mirrored ? 0 : showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing
+            rightPadding: mirrored ? showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing : 0
+            text: i18nc("@option:check", "Shuffle")
+            enabled: expandMediaPlayerTasks.checked
+        }
+
+        QQC2.CheckBox {
+            id: showWideMediaRepeat
+            leftPadding: mirrored ? 0 : showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing
+            rightPadding: mirrored ? showWideMediaPrevious.indicator.width + showWideMediaPrevious.spacing : 0
+            text: i18nc("@option:check", "Repeat")
+            enabled: expandMediaPlayerTasks.checked
+        }
+
+        QQC2.CheckBox {
+            id: showTooltipMediaShuffle
+            Kirigami.FormData.label: i18nc("@label for media settings", "Thumbnail buttons:")
+            text: i18nc("@option:check", "Shuffle")
+            enabled: tooltipControls.checked
+        }
+
+        QQC2.CheckBox {
+            id: showTooltipMediaRepeat
+            leftPadding: mirrored ? 0 : showTooltipMediaShuffle.indicator.width + showTooltipMediaShuffle.spacing
+            rightPadding: mirrored ? showTooltipMediaShuffle.indicator.width + showTooltipMediaShuffle.spacing : 0
+            text: i18nc("@option:check", "Repeat")
+            enabled: tooltipControls.checked
         }
 
         QQC2.ComboBox {

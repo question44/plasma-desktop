@@ -1,32 +1,66 @@
-# Plasma Desktop
+# Dynamic Icons-Only Task Manager
 
-Plasma for the desktop form factor. This repository contains code for many of the widgets, KCMs, and other parts of the Plasma Desktop.
+This is a Plasma 6.7.4-compatible fork of KDE Plasma's task manager. It keeps
+the stock task model and interactions, while adding:
 
-See [the CODEMAP](./CODEMAP.md) to get an idea of the layout of this repository.
+- high-contrast running-task indicators derived from application icons;
+- stronger matching edge indicators beside lower-opacity active and hovered backgrounds;
+- three configurable indicator styles: Plasma standard, equal per-window segments,
+  or a long active-window segment with the other windows represented by squares;
+- configurable minimum length for the small inactive-window markers, capped
+  automatically when required to keep every marker inside the task button;
+- configurable shared opacity for inactive task edges and inactive-window
+  markers in both segmented modes;
+- optional MPRIS playback progress in the existing edge indicator for
+  single-window media players, with a dimmed frozen fill while paused and an
+  selectable album-art or app-icon color with automatic fallback;
+- configurable audio-indicator visibility: always, hover only, or persist
+  while muted and otherwise appear on hover;
+- shared, configurable task-desktop-ID to MPRIS-ID aliases used by media
+  progress, tooltip controls, context-menu actions, and mouse media actions;
+- optional album-art task icons with automatic application-icon fallback and
+  an optional shadowed application-icon corner badge, plus a per-application exclusion
+  list editable from Media settings or each matched player's context menu;
+  configurable inset padding, metadata gap, and square, adjustable-squircle,
+  or rounded/circular cover shapes;
+- buffered album-art changes that retain the previous cover while the next one
+  loads, then cross-fade between them without flashing the application icon;
+- optional wider playing/paused media tasks on horizontal panels, with a
+  configurable responsive minimum/maximum width while non-media and
+  album-art-excluded tasks remain icon-only; wide tasks prefer their minimum
+  width without absorbing spare panel space and use the maximum only as a
+  content-growth ceiling, with optional artist/track metadata in stacked,
+  inline, or automatic responsive layouts, plus previous/play-next/shuffle/repeat controls
+  whose visibility mode and displayed buttons can be configured independently;
+  thumbnail-preview shuffle and repeat buttons have separate settings and sit
+  together beside the transport controls;
+- a dedicated Media settings tab for playback controls, progress, album art,
+  exclusions, and task-to-MPRIS ID mappings;
+- optional animations for segment emphasis, position, size, shape, and entry;
+- the stock group-expander badge is shown only in Plasma-standard mode;
+- linked or independently configurable background corner radii;
+- fixed-color fallback and configurable appearance.
 
-## See Also
+The upstream code is GPL-2.0-or-later and comes from `plasma-desktop` tag
+`v6.7.4`. The plugin uses the separate ID
+`org.janzon.plasma.dynamicicontasks`, so it does not replace RPM-owned files.
 
-This repository contains only components specific to the desktop form factor. Components which are more generic can be found elsewhere under the [Plasma group](https://invent.kde.org/plasma/) or in individual repositories. For example:
+Build, then install the uniquely named plugin into Plasma's Fedora plugin
+directory:
 
-* [Plasma Workspace](https://invent.kde.org/plasma/plasma-workspace) contains more generic code shared between Desktop, Mobile, and other form factors of Plasma. If you can't find what you're looking for in plasma-desktop, look here first.
-* [libplasma](https://invent.kde.org/plasma/libplasma) includes the building blocks for Plasma widgets.
-* [Plasma NetworkManager Applet](https://invent.kde.org/plasma/plasma-nm) has code for the network manager widget.
-* [Plasma PulseAudio Applet](https://invent.kde.org/plasma/plasma-pa) is where the code for the PulseAudio KCM and widget lives.
-* [Plasma Add-ons](https://invent.kde.org/plasma/kdeplasma-addons) is the home of the rest of the widgets that aren't in plasma-desktop, plasma-workspace, or another specific repository. For example: Web Browser, Comics, and Sticky Notes.
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build
+sudo install -o root -g root -m 0755 \
+    build/bin/plasma/applets/org.janzon.plasma.dynamicicontasks.so \
+    /usr/lib64/qt6/plugins/plasma/applets/org.janzon.plasma.dynamicicontasks.so
+```
 
-## Building
+Restart `plasma-plasmashell.service` after upgrading the plugin. Plasma does
+not discover compiled applet plugins from the ordinary user-local plugin path
+on this Fedora installation.
 
-The easiest way to make changes and test Plasma Desktop during development is to [build it with kdesrc-build](https://develop.kde.org/docs/getting-started/building/).
-
-## Contributing
-
-Like other projects in the KDE ecosystem, contributions are welcome from all. This repository is managed on [KDE Invent](https://invent.kde.org/plasma/plasma-desktop), our GitLab instance.
-
-* Want to contribute code? See the [GitLab wiki page](https://community.kde.org/Infrastructure/GitLab) for a tutorial on how to send a merge request.
-* Reporting a bug? Please submit it on the [KDE Bugtracking System](https://bugs.kde.org/enter_bug.cgi?format=guided&product=plasmashell). Please do not use the Issues
-tab to report bugs.
-* Is there a part of Plasma Desktop that's not translated? See the [Getting Involved in Translation wiki page](https://community.kde.org/Get_Involved/translation) to see how
-you can help translate!
-
-If you get stuck or need help with anything at all, head over to the [KDE New Contributors room](https://go.kde.org/matrix/#/#kde-welcome:kde.org) on Matrix. For questions specifically about Plasma Desktop, please ask in the [KDE Development room](https://go.kde.org/matrix/#/#plasma:kde.org). See [Matrix](https://community.kde.org/Matrix) for more details.
-
+To remove it, first replace the widget in the panel with Plasma's stock
+Icons-Only Task Manager, then remove
+`/usr/lib64/qt6/plugins/plasma/applets/org.janzon.plasma.dynamicicontasks.so`
+and restart Plasma Shell.

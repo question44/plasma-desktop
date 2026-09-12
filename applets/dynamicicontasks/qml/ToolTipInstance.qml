@@ -422,6 +422,20 @@ ColumnLayout {
         source: "PlayerController.qml"
     }
 
+    Binding {
+        target: playerController.item
+        property: "showShuffle"
+        value: Plasmoid.configuration.showTooltipMediaShuffle
+        when: playerController.item !== null
+    }
+
+    Binding {
+        target: playerController.item
+        property: "showRepeat"
+        value: Plasmoid.configuration.showTooltipMediaRepeat
+        when: playerController.item !== null
+    }
+
     // Volume controls
     Loader {
         id: volumeControls

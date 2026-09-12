@@ -296,6 +296,22 @@
       <label>Whether wide media-player tasks show a next-track button.</label>
       <default>true</default>
     </entry>
+    <entry name="showWideMediaShuffle" type="Bool">
+      <label>Whether wide media-player tasks show a shuffle button.</label>
+      <default>true</default>
+    </entry>
+    <entry name="showWideMediaRepeat" type="Bool">
+      <label>Whether wide media-player tasks show a repeat button.</label>
+      <default>true</default>
+    </entry>
+    <entry name="showTooltipMediaShuffle" type="Bool">
+      <label>Whether media thumbnail previews show a shuffle button.</label>
+      <default>true</default>
+    </entry>
+    <entry name="showTooltipMediaRepeat" type="Bool">
+      <label>Whether media thumbnail previews show a repeat button.</label>
+      <default>true</default>
+    </entry>
     <entry name="wideMediaControlsBackgroundStyle" type="Int">
       <label>Background treatment for media controls in wide media-player tasks.</label>
       <default>0</default>

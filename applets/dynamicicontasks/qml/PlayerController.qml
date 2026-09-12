@@ -21,6 +21,11 @@ import org.kde.plasma.private.mpris as Mpris
 RowLayout {
     id: root
 
+    // These are supplied by the tooltip's Loader because this component is
+    // loaded outside the applet's Plasmoid context.
+    property bool showShuffle: true
+    property bool showRepeat: true
+
     enabled: toolTipDelegate.playerData?.canControl ?? false
     spacing: Kirigami.Units.smallSpacing
 
@@ -88,5 +93,35 @@ RowLayout {
         enabled: toolTipDelegate.playerData?.canGoNext ?? false
         icon.name: mirrored ? "media-skip-backward" : "media-skip-forward"
         onClicked: toolTipDelegate.playerData.Next()
+    }
+
+    PlasmaComponents3.ToolButton {
+        visible: root.showShuffle
+            && toolTipDelegate.playerData?.shuffle !== Mpris.ShuffleStatus.Unknown
+        enabled: toolTipDelegate.playerData?.canControl ?? false
+        checkable: true
+        checked: toolTipDelegate.playerData?.shuffle === Mpris.ShuffleStatus.On
+        icon.name: "media-playlist-shuffle"
+        onClicked: toolTipDelegate.playerData.shuffle = checked
+            ? Mpris.ShuffleStatus.On : Mpris.ShuffleStatus.Off
+        Accessible.name: i18nc("@action:button", "Toggle shuffle")
+    }
+
+    PlasmaComponents3.ToolButton {
+        visible: root.showRepeat
+            && toolTipDelegate.playerData?.loopStatus !== Mpris.LoopStatus.Unknown
+        enabled: toolTipDelegate.playerData?.canControl ?? false
+        checkable: true
+        checked: toolTipDelegate.playerData?.loopStatus !== Mpris.LoopStatus.None
+        icon.name: toolTipDelegate.playerData?.loopStatus === Mpris.LoopStatus.Track
+            ? "media-repeat-single" : "media-playlist-repeat"
+        onClicked: {
+            const loopStatus = toolTipDelegate.playerData.loopStatus;
+            toolTipDelegate.playerData.loopStatus = loopStatus === Mpris.LoopStatus.None
+                ? Mpris.LoopStatus.Playlist
+                : (loopStatus === Mpris.LoopStatus.Playlist
+                    ? Mpris.LoopStatus.Track : Mpris.LoopStatus.None);
+        }
+        Accessible.name: i18nc("@action:button", "Cycle repeat mode")
     }
 }

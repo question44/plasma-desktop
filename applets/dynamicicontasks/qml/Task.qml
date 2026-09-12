@@ -141,6 +141,10 @@ PlasmaCore.ToolTipArea {
         (Plasmoid.configuration.showWideMediaPrevious ? 1 : 0)
         + (Plasmoid.configuration.showWideMediaPlayPause ? 1 : 0)
         + (Plasmoid.configuration.showWideMediaNext ? 1 : 0)
+        + (Plasmoid.configuration.showWideMediaShuffle
+           && mediaPlayerData?.shuffle !== Mpris.ShuffleStatus.Unknown ? 1 : 0)
+        + (Plasmoid.configuration.showWideMediaRepeat
+           && mediaPlayerData?.loopStatus !== Mpris.LoopStatus.Unknown ? 1 : 0)
     readonly property real mediaControlsButtonSize: Kirigami.Units.iconSizes.smallMedium
     readonly property real mediaControlsHorizontalPadding: Kirigami.Units.smallSpacing * 1.5
     readonly property real mediaControlsWidth: mediaControlsButtonSize * mediaControlsButtonCount
@@ -1646,6 +1650,40 @@ PlasmaCore.ToolTipArea {
                     ? "media-skip-backward" : "media-skip-forward"
                 Accessible.name: i18nc("@action:button", "Next track")
                 onClicked: task.mediaPlayerData?.Next()
+            }
+
+            PlasmaComponents3.ToolButton {
+                visible: Plasmoid.configuration.showWideMediaShuffle
+                    && task.mediaPlayerData?.shuffle !== Mpris.ShuffleStatus.Unknown
+                width: visible ? task.mediaControlsButtonSize : 0
+                height: width
+                enabled: task.mediaPlayerData?.canControl ?? false
+                checkable: true
+                checked: task.mediaPlayerData?.shuffle === Mpris.ShuffleStatus.On
+                icon.name: "media-playlist-shuffle"
+                Accessible.name: i18nc("@action:button", "Toggle shuffle")
+                onClicked: task.mediaPlayerData.shuffle = checked
+                    ? Mpris.ShuffleStatus.On : Mpris.ShuffleStatus.Off
+            }
+
+            PlasmaComponents3.ToolButton {
+                visible: Plasmoid.configuration.showWideMediaRepeat
+                    && task.mediaPlayerData?.loopStatus !== Mpris.LoopStatus.Unknown
+                width: visible ? task.mediaControlsButtonSize : 0
+                height: width
+                enabled: task.mediaPlayerData?.canControl ?? false
+                checkable: true
+                checked: task.mediaPlayerData?.loopStatus !== Mpris.LoopStatus.None
+                icon.name: task.mediaPlayerData?.loopStatus === Mpris.LoopStatus.Track
+                    ? "media-repeat-single" : "media-playlist-repeat"
+                Accessible.name: i18nc("@action:button", "Cycle repeat mode")
+                onClicked: {
+                    const loopStatus = task.mediaPlayerData.loopStatus;
+                    task.mediaPlayerData.loopStatus = loopStatus === Mpris.LoopStatus.None
+                        ? Mpris.LoopStatus.Playlist
+                        : (loopStatus === Mpris.LoopStatus.Playlist
+                            ? Mpris.LoopStatus.Track : Mpris.LoopStatus.None);
+                }
             }
         }
     }
