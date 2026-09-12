@@ -320,6 +320,30 @@
       <label>Whether media thumbnail previews show a next-track button.</label>
       <default>true</default>
     </entry>
+    <entry name="showMediaVisualizer" type="Bool">
+      <label>Whether media tasks show a Cava audio visualizer.</label>
+      <default>false</default>
+    </entry>
+    <entry name="mediaVisualizerMaxHeight" type="Int">
+      <label>Maximum media visualizer height as a percentage of the task.</label>
+      <default>35</default>
+    </entry>
+    <entry name="mediaVisualizerOpacity" type="Int">
+      <label>Opacity of the media visualizer.</label>
+      <default>32</default>
+    </entry>
+    <entry name="mediaVisualizerSensitivity" type="Int">
+      <label>Level sensitivity of the media visualizer.</label>
+      <default>150</default>
+    </entry>
+    <entry name="mediaVisualizerBarWidth" type="Int">
+      <label>Width of individual media visualizer bars in pixels.</label>
+      <default>4</default>
+    </entry>
+    <entry name="mediaVisualizerBarGap" type="Int">
+      <label>Gap between media visualizer bars in pixels.</label>
+      <default>1</default>
+    </entry>
     <entry name="showTooltipMediaRepeat" type="Bool">
       <label>Whether media thumbnail previews show a repeat button.</label>
       <default>true</default>

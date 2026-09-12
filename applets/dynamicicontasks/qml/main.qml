@@ -44,6 +44,20 @@ PlasmoidItem {
     readonly property Component pulseAudioComponent: Qt.createComponent("PulseAudio.qml")
 
     property alias taskList: taskList
+    property alias visualizer: cavaVisualizer
+
+    CavaVisualizer {
+        id: cavaVisualizer
+    }
+
+    function configureVisualizer(): void {
+        cavaVisualizer.configure(Plasmoid.configuration.showMediaVisualizer, 64);
+    }
+
+    Connections {
+        target: Plasmoid.configuration
+        function onShowMediaVisualizerChanged(): void { tasks.configureVisualizer(); }
+    }
 
     preferredRepresentation: fullRepresentation
 
@@ -578,6 +592,7 @@ PlasmoidItem {
     }
 
     Component.onCompleted: {
+        configureVisualizer();
         TaskManagerApplet.TaskTools.taskManagerInstanceCount += 1;
         requestLayout.connect(iconGeometryTimer.restart);
     }

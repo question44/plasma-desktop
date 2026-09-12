@@ -38,6 +38,12 @@ KCMUtils.SimpleKCM {
     property alias cfg_showTooltipMediaPrevious: showTooltipMediaPrevious.checked
     property alias cfg_showTooltipMediaPlayPause: showTooltipMediaPlayPause.checked
     property alias cfg_showTooltipMediaNext: showTooltipMediaNext.checked
+    property alias cfg_showMediaVisualizer: showMediaVisualizer.checked
+    property alias cfg_mediaVisualizerMaxHeight: mediaVisualizerMaxHeight.value
+    property alias cfg_mediaVisualizerOpacity: mediaVisualizerOpacity.value
+    property alias cfg_mediaVisualizerSensitivity: mediaVisualizerSensitivity.value
+    property alias cfg_mediaVisualizerBarWidth: mediaVisualizerBarWidth.value
+    property alias cfg_mediaVisualizerBarGap: mediaVisualizerBarGap.value
     property alias cfg_wideMediaControlsBackgroundStyle: wideMediaControlsBackgroundStyle.currentIndex
     property alias cfg_replaceMediaPlayerIconWithAlbumArt: replaceMediaPlayerIconWithAlbumArt.checked
     property alias cfg_showAppIconOnAlbumArt: showAppIconOnAlbumArt.checked
@@ -270,6 +276,67 @@ KCMUtils.SimpleKCM {
                 text: i18nc("@option:check", "Repeat")
                 enabled: tooltipControls.checked
             }
+        }
+
+        QQC2.CheckBox {
+            id: showMediaVisualizer
+            Kirigami.FormData.label: i18nc("@label for media settings", "Visualizer:")
+            text: i18nc("@option:check", "Show Cava audio visualizer")
+        }
+
+        QQC2.SpinBox {
+            id: mediaVisualizerMaxHeight
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Maximum height:")
+            from: 5
+            to: 80
+            stepSize: 5
+            enabled: showMediaVisualizer.checked
+            textFromValue: value => i18nc("@item:valuesuffix percent", "%1% of task height", value)
+            valueFromText: text => parseInt(text)
+        }
+
+        QQC2.SpinBox {
+            id: mediaVisualizerOpacity
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Opacity:")
+            from: 5
+            to: 100
+            stepSize: 5
+            enabled: showMediaVisualizer.checked
+            textFromValue: value => i18nc("@item:valuesuffix percent", "%1%", value)
+            valueFromText: text => parseInt(text)
+        }
+
+        QQC2.SpinBox {
+            id: mediaVisualizerSensitivity
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Sensitivity:")
+            from: 50
+            to: 400
+            stepSize: 10
+            enabled: showMediaVisualizer.checked
+            textFromValue: value => i18nc("@item:valuesuffix percent", "%1%", value)
+            valueFromText: text => parseInt(text)
+        }
+
+        QQC2.SpinBox {
+            id: mediaVisualizerBarWidth
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Bar width:")
+            from: 1
+            to: 16
+            stepSize: 1
+            enabled: showMediaVisualizer.checked
+            textFromValue: value => i18nc("@item:valuesuffix pixels", "%1 px", value)
+            valueFromText: text => parseInt(text)
+        }
+
+        QQC2.SpinBox {
+            id: mediaVisualizerBarGap
+            Kirigami.FormData.label: i18nc("@label:spinbox", "Bar gap:")
+            from: 0
+            to: 12
+            stepSize: 1
+            enabled: showMediaVisualizer.checked
+            textFromValue: value => i18nc("@item:valuesuffix pixels", "%1 px", value)
+            valueFromText: text => parseInt(text)
         }
 
         QQC2.ComboBox {

@@ -59,6 +59,7 @@ plasma_add_applet(org.janzon.plasma.dynamicicontasks
         qml/code/TaskTools.js
     CPP_SOURCES
         backend.cpp
+        visualizer.cpp
         smartlauncherbackend.cpp
         smartlauncheritem.cpp
     RESOURCES

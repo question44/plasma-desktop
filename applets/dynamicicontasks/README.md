@@ -38,6 +38,9 @@ the stock task model and interactions, while adding:
 - a dedicated Media settings tab for playback controls, progress, album art,
   exclusions, and task-to-MPRIS ID mappings;
 - a seek bar in media thumbnail tooltips for players that support seeking;
+- an optional Cava-backed audio visualizer rendered as colored bars beneath
+  wide media metadata, with configurable maximum height, opacity, sensitivity,
+  and bar width;
 - optional animations for segment emphasis, position, size, shape, and entry;
 - the stock group-expander badge is shown only in Plasma-standard mode;
 - linked or independently configurable background corner radii;

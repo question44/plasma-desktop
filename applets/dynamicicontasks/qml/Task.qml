@@ -1262,6 +1262,7 @@ PlasmaCore.ToolTipArea {
             id: stackedMetadata
 
             anchors.fill: parent
+            z: 1
             visible: !task.mediaMetadataInline
             spacing: 0
 
@@ -1414,9 +1415,63 @@ PlasmaCore.ToolTipArea {
         }
 
         Item {
+            id: mediaVisualizer
+
+            z: 0
+            opacity: Math.max(0.05, Math.min(1,
+                Plasmoid.configuration.mediaVisualizerOpacity / 100))
+            anchors.left: parent.left
+            width: parent.width + task.mediaControlsReservation
+                + task.mediaAudioIndicatorReservation
+            anchors.bottom: parent.bottom
+            height: parent.height * Math.max(0.05, Math.min(0.8,
+                Plasmoid.configuration.mediaVisualizerMaxHeight / 100))
+            visible: Plasmoid.configuration.showMediaVisualizer
+                && task.mediaProgressPlaying
+                && (task.tasksRoot.visualizer?.values?.length ?? 0) > 0
+            clip: true
+
+            readonly property real configuredBarWidth: Math.max(1,
+                Plasmoid.configuration.mediaVisualizerBarWidth)
+            readonly property real barSpacing: Math.max(0,
+                Plasmoid.configuration.mediaVisualizerBarGap)
+            readonly property int visibleBarCount: Math.max(1, Math.min(
+                task.tasksRoot.visualizer?.values?.length ?? 1,
+                Math.floor((width + barSpacing) / (configuredBarWidth + barSpacing))))
+
+            Item {
+                id: mediaVisualizerCanvas
+                anchors.fill: parent
+                Repeater {
+                    id: mediaVisualizerBarRepeater
+                    model: mediaVisualizer.visibleBarCount
+
+                    Rectangle {
+                        required property int index
+                        readonly property int sourceIndex: Math.min(
+                            (task.tasksRoot.visualizer?.values?.length ?? 1) - 1,
+                            Math.floor(index * (task.tasksRoot.visualizer?.values?.length ?? 1)
+                                / Math.max(1, mediaVisualizerBarRepeater.count)))
+                        readonly property real level: task.tasksRoot.visualizer?.values?.[sourceIndex] ?? 0
+                        width: Math.min(mediaVisualizer.configuredBarWidth,
+                            Math.max(1, mediaVisualizerCanvas.width - x))
+                        height: Math.max(1, mediaVisualizer.height * Math.min(1,
+                            level * Plasmoid.configuration.mediaVisualizerSensitivity / 100))
+                        x: index * (mediaVisualizer.configuredBarWidth + mediaVisualizer.barSpacing)
+                        anchors.bottom: mediaVisualizerCanvas.bottom
+                        radius: width / 2
+                        color: task.mediaProgressColor
+                        opacity: 0.82
+                    }
+                }
+            }
+        }
+
+        Item {
             id: inlineMetadata
 
             anchors.fill: parent
+            z: 1
             visible: task.mediaMetadataInline
             clip: true
             onVisibleChanged: if (visible) metadataMarqueeRestartTimer.restart()
