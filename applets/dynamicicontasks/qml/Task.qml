@@ -30,6 +30,7 @@ PlasmaCore.ToolTipArea {
 
         required property string iconSource
         required property string accessibleName
+        required property var toolTipArea
         property bool checkable: false
         property bool checked: false
 
@@ -60,7 +61,14 @@ PlasmaCore.ToolTipArea {
             acceptedButtons: Qt.LeftButton
             gesturePolicy: TapHandler.ReleaseWithinBounds
             enabled: control.enabled
-            onTapped: control.triggered()
+            onTapped: {
+                control.triggered();
+                Qt.callLater(() => {
+                    if (controlHover.hovered && control.toolTipArea.active) {
+                        control.toolTipArea.showToolTip();
+                    }
+                });
+            }
         }
 
         PlasmaExtras.Highlight {
@@ -1879,6 +1887,7 @@ PlasmaCore.ToolTipArea {
                 visible: Plasmoid.configuration.showWideMediaPrevious
                 width: visible ? task.mediaControlsButtonSize : 0
                 height: width
+                toolTipArea: task
                 enabled: task.mediaPlayerData?.canGoPrevious ?? false
                 iconSource: Application.layoutDirection === Qt.RightToLeft
                     ? "media-skip-forward" : "media-skip-backward"
@@ -1890,6 +1899,7 @@ PlasmaCore.ToolTipArea {
                 visible: Plasmoid.configuration.showWideMediaPlayPause
                 width: visible ? task.mediaControlsButtonSize : 0
                 height: width
+                toolTipArea: task
                 enabled: task.mediaProgressPlaying
                     ? (task.mediaPlayerData?.canPause ?? false)
                     : (task.mediaPlayerData?.canPlay ?? false)
@@ -1911,6 +1921,7 @@ PlasmaCore.ToolTipArea {
                 visible: Plasmoid.configuration.showWideMediaNext
                 width: visible ? task.mediaControlsButtonSize : 0
                 height: width
+                toolTipArea: task
                 enabled: task.mediaPlayerData?.canGoNext ?? false
                 iconSource: Application.layoutDirection === Qt.RightToLeft
                     ? "media-skip-backward" : "media-skip-forward"
@@ -1923,6 +1934,7 @@ PlasmaCore.ToolTipArea {
                     && task.mediaPlayerData?.shuffle !== Mpris.ShuffleStatus.Unknown
                 width: visible ? task.mediaControlsButtonSize : 0
                 height: width
+                toolTipArea: task
                 enabled: task.mediaPlayerData?.canControl ?? false
                 checkable: true
                 checked: task.mediaPlayerData?.shuffle === Mpris.ShuffleStatus.On
@@ -1937,6 +1949,7 @@ PlasmaCore.ToolTipArea {
                     && task.mediaPlayerData?.loopStatus !== Mpris.LoopStatus.Unknown
                 width: visible ? task.mediaControlsButtonSize : 0
                 height: width
+                toolTipArea: task
                 enabled: task.mediaPlayerData?.canControl ?? false
                 checkable: true
                 checked: task.mediaPlayerData?.loopStatus !== Mpris.LoopStatus.None
