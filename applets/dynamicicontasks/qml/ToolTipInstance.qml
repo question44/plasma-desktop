@@ -81,6 +81,9 @@ ColumnLayout {
     readonly property color lyricsAccentColor: toolTipDelegate.parentTask
         ? toolTipDelegate.parentTask.mediaProgressColor
         : Kirigami.Theme.highlightColor
+    readonly property real lyricsAccentMinimumLuma: 0.48
+    readonly property real lyricsAccentMaximumLuma: 0.72
+    readonly property color readableLyricsAccentColor: adjustedLyricsAccentColor(lyricsAccentColor)
     property var lyricsRequest: null
     property string lyricsTrackKey: ""
     property int lyricsCurrentIndex: -1
@@ -89,6 +92,21 @@ ColumnLayout {
 
     ListModel {
         id: lyricsLines
+    }
+
+    function adjustedLyricsAccentColor(accentColor) {
+        const accentLuma = Kirigami.ColorUtils.grayForColor(accentColor);
+        if (accentLuma >= lyricsAccentMinimumLuma) {
+            if (accentLuma <= lyricsAccentMaximumLuma) {
+                return accentColor;
+            }
+
+            const blackMix = (accentLuma - lyricsAccentMaximumLuma) / accentLuma;
+            return Kirigami.ColorUtils.linearInterpolation(accentColor, "black", blackMix);
+        }
+
+        const whiteMix = (lyricsAccentMinimumLuma - accentLuma) / (1 - accentLuma);
+        return Kirigami.ColorUtils.linearInterpolation(accentColor, "white", whiteMix);
     }
 
     function clearLyrics() {
@@ -603,7 +621,7 @@ ColumnLayout {
                         maximumLineCount: 2
                         elide: Text.ElideRight
                         wrapMode: Text.Wrap
-                        color: lyricDelegate.current ? root.lyricsAccentColor : Kirigami.Theme.textColor
+                        color: lyricDelegate.current ? root.readableLyricsAccentColor : Kirigami.Theme.textColor
                         opacity: lyricDelegate.current ? 1 : Math.max(0.22, 0.72 - lyricDelegate.distance * 0.14)
                         font.bold: lyricDelegate.current
                         scale: lyricDelegate.targetScale
@@ -630,6 +648,7 @@ ColumnLayout {
                             radius: 1.5
                         }
                     }
+
                 }
 
                 TextMetrics {

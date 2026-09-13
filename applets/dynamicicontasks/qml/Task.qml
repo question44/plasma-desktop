@@ -333,6 +333,7 @@ PlasmaCore.ToolTipArea {
         mediaPlayerColorSourceName === "album"
         && !mediaPresentationExcluded
         && String(mediaPlayerData?.artUrl ?? "").length > 0
+        && albumArtColors.readySourceUrl === String(mediaPlayerData?.artUrl ?? "")
         && albumArtColors.palette.length > 0
     readonly property color mediaAlbumArtColor: {
         const strategy = albumArtColorStrategyName;
@@ -963,18 +964,55 @@ PlasmaCore.ToolTipArea {
     Image {
         id: albumArtColorSource
 
+        property string scheduledSourceUrl: ""
+
+        function schedulePaletteUpdate(): void {
+            const readyUrl = String(source);
+            if (status !== Image.Ready || readyUrl.length === 0
+                    || scheduledSourceUrl === readyUrl) {
+                return;
+            }
+
+            scheduledSourceUrl = readyUrl;
+            Qt.callLater(() => {
+                scheduledSourceUrl = "";
+                if (status !== Image.Ready || String(source) !== readyUrl) {
+                    return;
+                }
+                albumArtColors.pendingSourceUrl = readyUrl;
+                albumArtColors.update();
+            });
+        }
+
         visible: false
         asynchronous: true
         cache: true
         source: task.mediaPresentationExcluded ? "" : (task.mediaPlayerData?.artUrl ?? "")
         sourceSize.width: 128
         sourceSize.height: 128
+
+        onSourceChanged: {
+            albumArtColors.readySourceUrl = "";
+            schedulePaletteUpdate();
+        }
+        onStatusChanged: schedulePaletteUpdate()
     }
 
     Kirigami.ImageColors {
         id: albumArtColors
 
-        source: albumArtColorSource.status === Image.Ready ? albumArtColorSource : null
+        property string pendingSourceUrl: ""
+        property string readySourceUrl: ""
+
+        source: albumArtColorSource
+
+        onPaletteChanged: {
+            const currentSourceUrl = String(albumArtColorSource.source);
+            readySourceUrl = albumArtColorSource.status === Image.Ready
+                && currentSourceUrl === pendingSourceUrl
+                ? pendingSourceUrl
+                : "";
+        }
     }
 
     Rectangle {
