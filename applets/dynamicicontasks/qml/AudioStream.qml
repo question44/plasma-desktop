@@ -114,6 +114,47 @@ Item {
         onTapped: (eventPoint, button) => toggleMuted()
     }
 
+    WheelHandler {
+        id: volumeWheelHandler
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        enabled: audioStreamIconBox.visible && pulseAudio.item !== null
+
+        onWheel: event => {
+            let increment = 0;
+            while (rotation >= 15) {
+                rotation -= 15;
+                increment++;
+            }
+            while (rotation <= -15) {
+                rotation += 15;
+                increment--;
+            }
+            if (increment === 0) {
+                event.accepted = true;
+                return;
+            }
+
+            const loudest = task.audioStreams.reduce(
+                (maximum, stream) => Math.max(maximum, stream.volume), 0);
+            const step = (pulseAudio.item.normalVolume - pulseAudio.item.minimalVolume)
+                * pulseAudio.item.globalConfig.volumeStep / 100;
+
+            task.audioStreams.forEach(stream => {
+                let delta = step * increment;
+                if (loudest > 0) {
+                    delta *= stream.volume / loudest;
+                }
+                const requestedVolume = stream.volume + delta;
+                const volume = Math.max(
+                    pulseAudio.item.minimalVolume,
+                    Math.min(requestedVolume, pulseAudio.item.normalVolume));
+                stream.model.Volume = volume;
+                stream.model.Muted = volume === 0;
+            });
+            event.accepted = true;
+        }
+    }
+
     PlasmaExtras.Highlight {
         anchors.fill: audioStreamIcon
         hovered: hoverHandler.hovered || parent.activeFocus

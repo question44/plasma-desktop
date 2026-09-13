@@ -406,6 +406,12 @@
       <label>Whether circular album art rotates while media is playing.</label>
       <default>false</default>
     </entry>
+    <entry name="albumArtRotationStyle" type="Int">
+      <label>Visual style for rotating circular album art: 0 = plain, 1 = CD, 2 = vinyl.</label>
+      <default>0</default>
+      <min>0</min>
+      <max>2</max>
+    </entry>
     <entry name="albumArtSquircleRoundness" type="Int">
       <label>Corner roundness of squircle replacement album art in percent.</label>
       <default>36</default>

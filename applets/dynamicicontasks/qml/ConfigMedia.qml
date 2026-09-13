@@ -54,6 +54,7 @@ KCMUtils.SimpleKCM {
     property alias cfg_albumArtPadding: albumArtPadding.value
     property alias cfg_albumArtShape: albumArtShape.currentIndex
     property alias cfg_rotateCircularAlbumArt: rotateCircularAlbumArt.checked
+    property alias cfg_albumArtRotationStyle: albumArtRotationStyle.currentIndex
     property alias cfg_albumArtSquircleRoundness: albumArtSquircleRoundness.value
     property alias cfg_albumArtMetadataGap: albumArtMetadataGap.value
     property alias cfg_albumArtExcludedAppIds: albumArtExcludedAppIds.text
@@ -477,6 +478,18 @@ KCMUtils.SimpleKCM {
             text: i18nc("@option:check", "Rotate while playing")
             enabled: replaceMediaPlayerIconWithAlbumArt.checked
                 && albumArtShape.currentIndex === 3
+        }
+
+        QQC2.ComboBox {
+            id: albumArtRotationStyle
+            Kirigami.FormData.label: i18nc("@label:listbox", "Rotating disc style:")
+            enabled: replaceMediaPlayerIconWithAlbumArt.checked
+                && albumArtShape.currentIndex === 3
+            model: [
+                i18nc("@item:inlistbox", "Plain circle"),
+                i18nc("@item:inlistbox", "CD"),
+                i18nc("@item:inlistbox", "Vinyl record")
+            ]
         }
 
         QQC2.SpinBox {

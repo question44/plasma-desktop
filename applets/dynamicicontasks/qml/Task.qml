@@ -232,6 +232,8 @@ PlasmaCore.ToolTipArea {
         Math.max(0, Math.min(3, Plasmoid.configuration.albumArtShape))]
     readonly property bool rotateCircularAlbumArt: Plasmoid.configuration.rotateCircularAlbumArt
         && albumArtShapeName === "circle"
+    readonly property string albumArtRotationStyleName: ["plain", "cd", "vinyl"][
+        Math.max(0, Math.min(2, Plasmoid.configuration.albumArtRotationStyle))]
     readonly property real albumArtPadding: mediaAlbumArtEnabled
         ? Plasmoid.configuration.albumArtPadding
         : 0
@@ -1172,6 +1174,63 @@ PlasmaCore.ToolTipArea {
                 visible: albumArtSecond.opacity > 0
                 opacity: albumArtSecond.opacity
                 rotation: albumArtViewport.albumArtRotationAngle
+            }
+
+            Item {
+                id: albumArtDiscStyle
+
+                anchors.fill: parent
+                z: 1
+                visible: task.mediaAlbumArtEnabled
+                    && task.albumArtShapeName === "circle"
+                    && task.albumArtRotationStyleName !== "plain"
+                rotation: albumArtViewport.albumArtRotationAngle
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: "transparent"
+                    border.width: task.albumArtRotationStyleName === "cd" ? 2 : 1
+                    border.color: task.albumArtRotationStyleName === "cd"
+                        ? Qt.rgba(1, 1, 1, 0.32)
+                        : Qt.rgba(0, 0, 0, 0.48)
+                }
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: parent.width * (task.albumArtRotationStyleName === "cd" ? 0.16 : 0.12)
+                    height: width
+                    radius: width / 2
+                    color: task.albumArtRotationStyleName === "cd"
+                        ? Qt.rgba(1, 1, 1, 0.24)
+                        : Qt.rgba(0, 0, 0, 0.62)
+                    border.width: 1
+                    border.color: task.albumArtRotationStyleName === "cd"
+                        ? Qt.rgba(1, 1, 1, 0.5)
+                        : Qt.rgba(1, 1, 1, 0.25)
+                }
+
+                Rectangle {
+                    visible: task.albumArtRotationStyleName === "vinyl"
+                    anchors.centerIn: parent
+                    width: parent.width * 0.42
+                    height: width
+                    radius: width / 2
+                    color: "transparent"
+                    border.width: 1
+                    border.color: Qt.rgba(0, 0, 0, 0.38)
+                }
+
+                Rectangle {
+                    visible: task.albumArtRotationStyleName === "vinyl"
+                    anchors.centerIn: parent
+                    width: parent.width * 0.68
+                    height: width
+                    radius: width / 2
+                    color: "transparent"
+                    border.width: 1
+                    border.color: Qt.rgba(0, 0, 0, 0.28)
+                }
             }
 
             NumberAnimation {
