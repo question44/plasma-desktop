@@ -25,6 +25,62 @@ import org.kde.taskmanager as TaskManager
 PlasmaCore.ToolTipArea {
     id: task
 
+    component PanelMediaControlButton: Item {
+        id: control
+
+        required property string iconSource
+        required property string accessibleName
+        property bool checkable: false
+        property bool checked: false
+
+        signal triggered()
+
+        activeFocusOnTab: true
+        opacity: enabled ? 1 : 0.45
+
+        Accessible.checkable: checkable
+        Accessible.checked: checked
+        Accessible.name: accessibleName
+        Accessible.role: Accessible.Button
+        Accessible.onPressAction: control.triggered()
+
+        Keys.onReturnPressed: event => {
+            control.triggered();
+            event.accepted = true;
+        }
+        Keys.onEnterPressed: event => Keys.returnPressed(event)
+        Keys.onSpacePressed: event => Keys.returnPressed(event)
+
+        HoverHandler {
+            id: controlHover
+        }
+
+        TapHandler {
+            id: controlTap
+            acceptedButtons: Qt.LeftButton
+            gesturePolicy: TapHandler.ReleaseWithinBounds
+            enabled: control.enabled
+            onTapped: control.triggered()
+        }
+
+        PlasmaExtras.Highlight {
+            anchors.fill: parent
+            hovered: controlHover.hovered || control.activeFocus
+            pressed: controlTap.pressed
+        }
+
+        Kirigami.Icon {
+            readonly property real iconExtent: Math.min(parent.width, parent.height)
+                - Kirigami.Units.smallSpacing
+
+            anchors.centerIn: parent
+            width: iconExtent
+            height: iconExtent
+            source: control.iconSource
+            selected: controlTap.pressed || control.checked
+        }
+    }
+
     activeFocusOnTab: true
 
     // To achieve a bottom-to-top layout on vertical panels, the task manager
@@ -392,7 +448,6 @@ PlasmaCore.ToolTipArea {
     }
 
     active: !inPopup && !tasksRoot.groupDialog && task.contextMenu?.status !== PlasmaExtras.Menu.Open
-        && !mediaTaskControlsHover.hovered
     interactive: model.IsWindow || mainItem.playerData
     location: Plasmoid.location
     mainItem: !Plasmoid.configuration.showToolTips || !model.IsWindow ? pinnedAppToolTipDelegate : openWindowToolTipDelegate
@@ -1778,7 +1833,7 @@ PlasmaCore.ToolTipArea {
         z: 2
         width: task.mediaControlsWidth
         height: task.mediaControlsButtonSize
-        opacity: task.mediaControlsAlwaysVisible || task.mediaControlsHoverReady ? 1 : 0
+        opacity: task.mediaControlsAlwaysVisible || task.mediaControlsHoverReady || task.toolTipOpen ? 1 : 0
         anchors {
             right: parent.right
             rightMargin: taskFrame.margins.right + task.mediaAudioIndicatorReservation
@@ -1809,12 +1864,6 @@ PlasmaCore.ToolTipArea {
 
         HoverHandler {
             id: mediaTaskControlsHover
-
-            onHoveredChanged: {
-                if (hovered) {
-                    task.hideToolTip();
-                }
-            }
         }
 
         Row {
@@ -1826,30 +1875,30 @@ PlasmaCore.ToolTipArea {
             }
             spacing: Kirigami.Units.smallSpacing
 
-            PlasmaComponents3.ToolButton {
+            PanelMediaControlButton {
                 visible: Plasmoid.configuration.showWideMediaPrevious
                 width: visible ? task.mediaControlsButtonSize : 0
                 height: width
                 enabled: task.mediaPlayerData?.canGoPrevious ?? false
-                icon.name: Application.layoutDirection === Qt.RightToLeft
+                iconSource: Application.layoutDirection === Qt.RightToLeft
                     ? "media-skip-forward" : "media-skip-backward"
-                Accessible.name: i18nc("@action:button", "Previous track")
-                onClicked: task.mediaPlayerData?.Previous()
+                accessibleName: i18nc("@action:button", "Previous track")
+                onTriggered: task.mediaPlayerData?.Previous()
             }
 
-            PlasmaComponents3.ToolButton {
+            PanelMediaControlButton {
                 visible: Plasmoid.configuration.showWideMediaPlayPause
                 width: visible ? task.mediaControlsButtonSize : 0
                 height: width
                 enabled: task.mediaProgressPlaying
                     ? (task.mediaPlayerData?.canPause ?? false)
                     : (task.mediaPlayerData?.canPlay ?? false)
-                icon.name: task.mediaProgressPlaying
+                iconSource: task.mediaProgressPlaying
                     ? "media-playback-pause" : "media-playback-start"
-                Accessible.name: task.mediaProgressPlaying
+                accessibleName: task.mediaProgressPlaying
                     ? i18nc("@action:button", "Pause")
                     : i18nc("@action:button", "Play")
-                onClicked: {
+                onTriggered: {
                     if (task.mediaProgressPlaying) {
                         task.mediaPlayerData?.Pause();
                     } else {
@@ -1858,18 +1907,18 @@ PlasmaCore.ToolTipArea {
                 }
             }
 
-            PlasmaComponents3.ToolButton {
+            PanelMediaControlButton {
                 visible: Plasmoid.configuration.showWideMediaNext
                 width: visible ? task.mediaControlsButtonSize : 0
                 height: width
                 enabled: task.mediaPlayerData?.canGoNext ?? false
-                icon.name: Application.layoutDirection === Qt.RightToLeft
+                iconSource: Application.layoutDirection === Qt.RightToLeft
                     ? "media-skip-backward" : "media-skip-forward"
-                Accessible.name: i18nc("@action:button", "Next track")
-                onClicked: task.mediaPlayerData?.Next()
+                accessibleName: i18nc("@action:button", "Next track")
+                onTriggered: task.mediaPlayerData?.Next()
             }
 
-            PlasmaComponents3.ToolButton {
+            PanelMediaControlButton {
                 visible: Plasmoid.configuration.showWideMediaShuffle
                     && task.mediaPlayerData?.shuffle !== Mpris.ShuffleStatus.Unknown
                 width: visible ? task.mediaControlsButtonSize : 0
@@ -1877,13 +1926,13 @@ PlasmaCore.ToolTipArea {
                 enabled: task.mediaPlayerData?.canControl ?? false
                 checkable: true
                 checked: task.mediaPlayerData?.shuffle === Mpris.ShuffleStatus.On
-                icon.name: "media-playlist-shuffle"
-                Accessible.name: i18nc("@action:button", "Toggle shuffle")
-                onClicked: task.mediaPlayerData.shuffle = checked
-                    ? Mpris.ShuffleStatus.On : Mpris.ShuffleStatus.Off
+                iconSource: "media-playlist-shuffle"
+                accessibleName: i18nc("@action:button", "Toggle shuffle")
+                onTriggered: task.mediaPlayerData.shuffle = checked
+                    ? Mpris.ShuffleStatus.Off : Mpris.ShuffleStatus.On
             }
 
-            PlasmaComponents3.ToolButton {
+            PanelMediaControlButton {
                 visible: Plasmoid.configuration.showWideMediaRepeat
                     && task.mediaPlayerData?.loopStatus !== Mpris.LoopStatus.Unknown
                 width: visible ? task.mediaControlsButtonSize : 0
@@ -1891,10 +1940,10 @@ PlasmaCore.ToolTipArea {
                 enabled: task.mediaPlayerData?.canControl ?? false
                 checkable: true
                 checked: task.mediaPlayerData?.loopStatus !== Mpris.LoopStatus.None
-                icon.name: task.mediaPlayerData?.loopStatus === Mpris.LoopStatus.Track
+                iconSource: task.mediaPlayerData?.loopStatus === Mpris.LoopStatus.Track
                     ? "media-repeat-single" : "media-playlist-repeat"
-                Accessible.name: i18nc("@action:button", "Cycle repeat mode")
-                onClicked: {
+                accessibleName: i18nc("@action:button", "Cycle repeat mode")
+                onTriggered: {
                     const loopStatus = task.mediaPlayerData.loopStatus;
                     task.mediaPlayerData.loopStatus = loopStatus === Mpris.LoopStatus.None
                         ? Mpris.LoopStatus.Playlist

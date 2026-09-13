@@ -184,7 +184,7 @@ ColumnLayout {
         request.open("GET", `https://lrclib.net/api/get?${params}`);
         request.setRequestHeader("User-Agent", "Dynamic Icon Tasks (https://github.com/janzon/plasma-desktop-dynamic-icon-tasks)");
         request.onreadystatechange = () => {
-            if (request.readyState !== XMLHttpRequest.DONE || requestKey !== root.lyricsTrackKey) {
+            if (request.readyState !== XMLHttpRequest.DONE || !root || requestKey !== root.lyricsTrackKey) {
                 return;
             }
             lyricsRequest = null;
